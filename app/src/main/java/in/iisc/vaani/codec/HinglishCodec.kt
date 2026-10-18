@@ -4,26 +4,30 @@ package `in`.iisc.vaani.codec
  * VaaniEdge Hinglish Codec.
  *
  * Two deterministic, allocation-light transforms that sit on either side of the
- * on-device neural models. Both run in well under 0.5 ms for typical utterances
- * because they are pure table lookups + a single linear scan (no regex
- * backtracking on the hot path, no model inference).
+ * on-device neural models. Both run in well under a millisecond for typical utterances
+ * because they are table lookups + linear scans (no model inference).
  *
  *  1. [normalizeSttTranscript]  — STT post-processing.
  *     Whisper, decoding Hindi/Hinglish speech, emits Devanagari. This converts
  *     that Devanagari back into crisp Roman **Hinglish** (for native Hindi words)
  *     and restored **English** spellings (for loanwords like "meeting",
- *     "schedule"), using a large phonetic loanword lexicon plus an algorithmic
+ *     "schedule"), using a phonetic loanword lexicon plus an algorithmic
  *     Hunterian transliterator for anything unseen, plus a small homophone
  *     corrector for frequent ASR confusions.
  *
  *  2. [toAcousticDevanagariScript] — TTS pre-processing.
  *     The Indic VITS voice pronounces Devanagari. This converts Roman Hinglish,
  *     English words, and numeric/temporal/temperature expressions into natural
- *     phonetic Devanagari (e.g. `5 PM -> पाँच पी एम`, `28°C -> अट्ठाईस डिग्री
- *     सेल्सियस`) so both Hindi and English words are spoken in one Indian voice.
+ *     phonetic Devanagari, language-aware:
+ *       Hinglish  `4:30 PM, 28°C`  ->  `साढ़े चार पी एम, अट्ठाईस डिग्री सेल्सियस`
+ *       English   `4:30 PM, 28°C`  ->  `फ़ोर थर्टी पी एम, ट्वेंटी एट डिग्रीज़ सेल्सियस`
+ *     Each Latin word is routed: curated Indian-English lexicon -> Hinglish lexicon ->
+ *     CMU English lexicon ([englishLexicon], ARPAbet -> Devanagari) -> rule-based
+ *     Roman-Hindi transliteration; ALL-CAPS tokens are spelled as letters (DSP -> डी एस पी).
+ *     Both Hindi and English words are then spoken by the one Indian voice.
  *
  * Nothing in this file depends on Android or any native library, so it is fully
- * unit-testable on the host JVM.
+ * unit-testable on the host JVM. The English lexicon is injected at runtime.
  */
 object HinglishCodec {
 
@@ -32,6 +36,12 @@ object HinglishCodec {
 
     /** Punctuation that is kept verbatim and never prefixed with a space. */
     private val PUNCT = setOf(",", ".", "?", "!", ";", ":", "।", "॥")
+
+    /**
+     * CMU English pronunciation lexicon, installed at startup from
+     * `assets/lexicon/vaani_en_cmudict.txt` (or by tests from the same file).
+     */
+    @Volatile var englishLexicon: EnglishLexicon? = null
 
     // =========================================================================
     //  Lexicon 1: Devanagari -> Roman (STT normalisation).
@@ -64,12 +74,14 @@ object HinglishCodec {
         put("म्यूजिक", "music"); put("सॉन्ग", "song"); put("न्यूज", "news"); put("स्पोर्ट्स", "sports")
         put("ट्रैफिक", "traffic"); put("मैप", "map"); put("लोकेशन", "location")
         put("डायरेक्शन", "direction"); put("रूट", "route"); put("वेब", "web"); put("साइट", "site")
+        put("मीटिंग्स", "meetings"); put("रिव्यू", "review"); put("लैब", "lab"); put("सेट", "set")
 
         // --- Weather vocabulary ----------------------------------------------
         put("टेम्परेचर", "temperature"); put("तापमान", "temperature"); put("रेन", "rain")
         put("बारिश", "baarish"); put("धूप", "dhoop"); put("क्लाउड", "cloud")
         put("हवा", "hawa"); put("तूफान", "toofan"); put("ह्यूमिडिटी", "humidity")
         put("डिग्री", "degree"); put("सेल्सियस", "celsius"); put("फारेनहाइट", "fahrenheit")
+        put("मौसम", "mausam"); put("बादल", "baadal")
 
         // --- Days / months / time words --------------------------------------
         put("सोमवार", "Monday"); put("मंगलवार", "Tuesday"); put("बुधवार", "Wednesday")
@@ -101,7 +113,7 @@ object HinglishCodec {
         put("नहीं", "nahi"); put("हाँ", "haan"); put("ठीक", "theek"); put("अच्छा", "accha")
 
         // --- Common verbs (imperative / infinitive) --------------------------
-        put("सेट", "set"); put("करना", "karna"); put("करो", "karo"); put("कर", "kar")
+        put("करना", "karna"); put("करो", "karo"); put("कर", "kar")
         put("बताओ", "batao"); put("बता", "bata"); put("दिखाओ", "dikhao"); put("दिखा", "dikha")
         put("खोलो", "kholo"); put("बंद", "band"); put("चालू", "chalu"); put("लगाओ", "lagao")
         put("भेजो", "bhejo"); put("बनाओ", "banao"); put("याद", "yaad"); put("दिला", "dila")
@@ -115,47 +127,181 @@ object HinglishCodec {
     }
 
     // =========================================================================
-    //  Lexicon 2: Roman/English -> Devanagari (TTS acoustic script).
-    //  Keys are lower-cased on lookup. Values are phonetic Devanagari tuned for
-    //  the Indic VITS voice.
+    //  Lexicon 2a: curated Indian-English pronunciations (Roman -> Devanagari).
+    //  Takes priority over CMUdict for words whose Indian pronunciation differs
+    //  from the American dictionary entry, and for the assistant's core vocabulary.
     // =========================================================================
     val ROMAN_TO_DEV: Map<String, String> = buildMap {
         put("weather", "वेदर"); put("forecast", "फोरकास्ट"); put("for", "फॉर")
-        put("bangalore", "बैंगलोर"); put("bengaluru", "बैंगलोर"); put("reminder", "रिमाइंडर")
-        put("meeting", "मीटिंग"); put("schedule", "शेड्यूल"); put("alarm", "अलार्म")
+        put("bangalore", "बैंगलोर"); put("bengaluru", "बेंगलुरु"); put("reminder", "रिमाइंडर")
+        put("reminders", "रिमाइंडर्स"); put("meeting", "मीटिंग"); put("meetings", "मीटिंग्स")
+        put("schedule", "शेड्यूल"); put("scheduled", "शेड्यूल्ड"); put("alarm", "अलार्म"); put("alarms", "अलार्म्स")
         put("my", "माय"); put("at", "एट"); put("set", "सेट"); put("next", "नेक्स्ट")
         put("calendar", "कैलेंडर"); put("task", "टास्क"); put("event", "इवेंट"); put("note", "नोट")
         put("timer", "टाइमर"); put("message", "मैसेज"); put("call", "कॉल"); put("email", "ईमेल")
         put("today", "टुडे"); put("tomorrow", "टुमारो"); put("now", "नाउ"); put("please", "प्लीज")
-        put("temperature", "टेम्परेचर"); put("degree", "डिग्री"); put("celsius", "सेल्सियस")
-        put("fahrenheit", "फ़ारेनहाइट"); put("rain", "रेन"); put("humidity", "ह्यूमिडिटी")
-        put("monday", "मंडे"); put("tuesday", "ट्यूज़डे"); put("wednesday", "वेंसडे")
-        put("thursday", "थर्सडे"); put("friday", "फ्राइडे"); put("saturday", "सैटरडे")
-        put("sunday", "संडे"); put("am", "ए एम"); put("pm", "पी एम"); put("ok", "ओके")
+        put("temperature", "टेम्परेचर"); put("degree", "डिग्री"); put("degrees", "डिग्रीज़")
+        put("celsius", "सेल्सियस"); put("fahrenheit", "फ़ारेनहाइट"); put("rain", "रेन")
+        put("humidity", "ह्यूमिडिटी"); put("monday", "मंडे"); put("tuesday", "ट्यूज़डे")
+        put("wednesday", "वेंसडे"); put("thursday", "थर्सडे"); put("friday", "फ्राइडे")
+        put("saturday", "सैटरडे"); put("sunday", "संडे"); put("ok", "ओके"); put("okay", "ओके")
         put("yes", "यस"); put("no", "नो"); put("hello", "हैलो")
-        // Hindi words written in Roman -> Devanagari
-        put("mujhe", "मुझे"); put("kal", "कल"); put("subah", "सुबह"); put("shaam", "शाम")
-        put("baje", "बजे"); put("ka", "का"); put("ke", "के"); put("ki", "की"); put("karna", "करना")
-        put("hai", "है"); put("hain", "हैं"); put("aaj", "आज"); put("kya", "क्या"); put("aur", "और")
-        put("meri", "मेरी"); put("mera", "मेरा"); put("mere", "मेरे"); put("kab", "कब")
-        put("main", "मैं"); put("aap", "आप"); put("nahi", "नहीं"); put("haan", "हाँ")
+        put("the", "द"); put("a", "अ"); put("an", "ऐन"); put("i", "आई"); put("is", "इज़")
+        put("are", "आर"); put("and", "ऐंड"); put("of", "ऑफ़"); put("to", "टू"); put("in", "इन")
+        put("on", "ऑन"); put("with", "विद"); put("your", "योर"); put("you", "यू"); put("have", "हैव")
+        put("has", "हैज़"); put("will", "विल"); put("be", "बी"); put("it", "इट"); put("this", "दिस")
+        put("that", "दैट"); put("what", "व्हाट"); put("when", "वेन"); put("where", "वेयर")
+        put("how", "हाउ"); put("can", "कैन"); put("high", "हाई"); put("low", "लो")
+        put("morning", "मॉर्निंग"); put("evening", "ईवनिंग"); put("afternoon", "आफ़्टरनून")
+        put("night", "नाइट"); put("done", "डन"); put("sure", "श्योर"); put("lab", "लैब")
+        put("review", "रिव्यू"); put("sync", "सिंक"); put("speech", "स्पीच"); put("edge", "एज")
+        put("benchmark", "बेंचमार्क"); put("telemetry", "टेलीमेट्री"); put("quantization", "क्वांटाइज़ेशन")
+        put("computational", "कम्प्यूटेशनल"); put("intelligence", "इंटेलिजेंस")
+        put("expect", "एक्सपेक्ट"); put("thunderstorm", "थंडरस्टॉर्म"); put("thunderstorms", "थंडरस्टॉर्म्स")
+        put("cloudy", "क्लाउडी"); put("sunny", "सनी"); put("chance", "चांस"); put("showers", "शावर्स")
+        put("drizzle", "ड्रिज़ल"); put("partly", "पार्टली"); put("clear", "क्लियर"); put("umbrella", "अम्ब्रेला")
+        put("gemini", "जेमिनी"); put("llama", "लामा"); put("groq", "ग्रॉक"); put("minutes", "मिनट्स")
+        put("minute", "मिनट"); put("hour", "आवर"); put("hours", "आवर्स"); put("percent", "परसेंट")
+        put("point", "पॉइंट"); put("zero", "ज़ीरो"); put("one", "वन"); put("two", "टू"); put("three", "थ्री")
+        put("four", "फ़ोर"); put("five", "फ़ाइव"); put("six", "सिक्स"); put("seven", "सेवन")
+        put("eight", "एट"); put("nine", "नाइन"); put("ten", "टेन"); put("eleven", "इलेवन")
+        put("twelve", "ट्वेल्व"); put("twenty", "ट्वेंटी"); put("thirty", "थर्टी"); put("forty", "फ़ोर्टी")
+        put("fifty", "फ़िफ़्टी"); put("hundred", "हंड्रेड"); put("thousand", "थाउज़ंड")
+        put("int", "इंट"); put("iisc", "आई आई एस सी")
     }
 
     // =========================================================================
-    //  Numbers -> Hindi words (0–40 exact, tens, 100) with a digit-by-digit
-    //  fallback for anything outside the table.
+    //  Lexicon 2b: Hindi words written in Roman (Hinglish) -> Devanagari.
     // =========================================================================
-    private val NUM_TO_HINDI: Map<Int, String> = mapOf(
-        0 to "शून्य", 1 to "एक", 2 to "दो", 3 to "तीन", 4 to "चार", 5 to "पाँच",
-        6 to "छह", 7 to "सात", 8 to "आठ", 9 to "नौ", 10 to "दस", 11 to "ग्यारह",
-        12 to "बारह", 13 to "तेरह", 14 to "चौदह", 15 to "पंद्रह", 16 to "सोलह",
-        17 to "सत्रह", 18 to "अठारह", 19 to "उन्नीस", 20 to "बीस", 21 to "इक्कीस",
-        22 to "बाईस", 23 to "तेईस", 24 to "चौबीस", 25 to "पच्चीस", 26 to "छब्बीस",
-        27 to "सत्ताईस", 28 to "अट्ठाईस", 29 to "उनतीस", 30 to "तीस", 31 to "इकतीस",
-        32 to "बत्तीस", 33 to "तैंतीस", 34 to "चौंतीस", 35 to "पैंतीस", 36 to "छत्तीस",
-        37 to "सैंतीस", 38 to "अड़तीस", 39 to "उनतालीस", 40 to "चालीस", 50 to "पचास",
-        60 to "साठ", 70 to "सत्तर", 80 to "अस्सी", 90 to "नब्बे", 100 to "सौ",
+    val HINGLISH_TO_DEV: Map<String, String> = buildMap {
+        put("mujhe", "मुझे"); put("kal", "कल"); put("subah", "सुबह"); put("shaam", "शाम")
+        put("raat", "रात"); put("dopahar", "दोपहर"); put("din", "दिन"); put("baje", "बजे")
+        put("ka", "का"); put("ke", "के"); put("ki", "की"); put("ko", "को"); put("se", "से")
+        put("karna", "करना"); put("karo", "करो"); put("kar", "कर"); put("karenge", "करेंगे")
+        put("hai", "है"); put("hain", "हैं"); put("ho", "हो"); put("hoga", "होगा"); put("hogi", "होगी")
+        put("honge", "होंगे"); put("hua", "हुआ"); put("hui", "हुई"); put("hue", "हुए"); put("tha", "था")
+        put("thi", "थी"); put("the", "थे"); put("aaj", "आज"); put("kya", "क्या"); put("aur", "और")
+        put("meri", "मेरी"); put("mera", "मेरा"); put("mere", "मेरे"); put("kab", "कब")
+        put("main", "मैं"); put("mai", "मैं"); put("aap", "आप"); put("aapka", "आपका"); put("aapki", "आपकी")
+        put("aapke", "आपके"); put("aapko", "आपको"); put("nahi", "नहीं"); put("nahin", "नहीं")
+        put("haan", "हाँ"); put("mein", "में"); put("me", "में"); put("par", "पर"); put("pe", "पे")
+        put("ya", "या"); put("bhi", "भी"); put("hi", "ही"); put("to", "तो"); put("toh", "तो")
+        put("na", "ना"); put("kahan", "कहाँ"); put("kaise", "कैसे"); put("kyun", "क्यों"); put("kyon", "क्यों")
+        put("kaun", "कौन"); put("kitna", "कितना"); put("kitne", "कितने"); put("kitni", "कितनी")
+        put("ye", "ये"); put("yeh", "यह"); put("wo", "वो"); put("woh", "वह"); put("vo", "वो")
+        put("is", "इस"); put("us", "उस"); put("iska", "इसका"); put("uska", "उसका"); put("hum", "हम")
+        put("hamara", "हमारा"); put("humara", "हमारा"); put("tum", "तुम"); put("tumhara", "तुम्हारा")
+        put("abhi", "अभी"); put("parson", "परसों"); put("ghanta", "घंटा"); put("ghante", "घंटे")
+        put("samay", "समय"); put("waqt", "वक़्त"); put("kiya", "किया"); put("kiye", "किए")
+        put("diya", "दिया"); put("diye", "दिए"); put("liya", "लिया"); put("liye", "लिए"); put("lie", "लिए")
+        put("gaya", "गया"); put("gayi", "गई"); put("gaye", "गए"); put("raha", "रहा"); put("rahi", "रही")
+        put("rahe", "रहे"); put("rahega", "रहेगा"); put("rahegi", "रहेगी"); put("sakte", "सकते")
+        put("sakta", "सकता"); put("sakti", "सकती"); put("chahiye", "चाहिए"); put("ji", "जी")
+        put("theek", "ठीक"); put("thik", "ठीक"); put("accha", "अच्छा"); put("achha", "अच्छा")
+        put("bahut", "बहुत"); put("thoda", "थोड़ा"); put("zyada", "ज़्यादा"); put("kam", "कम")
+        put("sab", "सब"); put("kuch", "कुछ"); put("koi", "कोई"); put("ek", "एक"); put("do", "दो")
+        put("teen", "तीन"); put("char", "चार"); put("chaar", "चार"); put("paanch", "पाँच")
+        put("saat", "सात"); put("aath", "आठ"); put("nau", "नौ"); put("das", "दस")
+        put("pehle", "पहले"); put("baad", "बाद"); put("phir", "फिर"); put("fir", "फिर")
+        put("jab", "जब"); put("tab", "तब"); put("agar", "अगर"); put("lekin", "लेकिन")
+        put("kyunki", "क्योंकि"); put("isliye", "इसलिए"); put("mausam", "मौसम"); put("baarish", "बारिश")
+        put("barish", "बारिश"); put("dhoop", "धूप"); put("garmi", "गर्मी"); put("sardi", "सर्दी")
+        put("thand", "ठंड"); put("badal", "बादल"); put("baadal", "बादल"); put("tapman", "तापमान")
+        put("sambhavna", "संभावना"); put("ummeed", "उम्मीद"); put("apni", "अपनी"); put("apna", "अपना")
+        put("apne", "अपने"); put("yaad", "याद"); put("dila", "दिला"); put("dilana", "दिलाना")
+        put("bata", "बता"); put("batao", "बताओ"); put("bataiye", "बताइए"); put("bataya", "बताया")
+        put("maine", "मैंने"); put("humne", "हमने"); put("aapne", "आपने"); put("hoon", "हूँ")
+        put("hu", "हूँ"); put("shukriya", "शुक्रिया"); put("dhanyavaad", "धन्यवाद"); put("namaste", "नमस्ते")
+        put("aage", "आगे"); put("wala", "वाला"); put("wali", "वाली"); put("wale", "वाले")
+        put("sabse", "सबसे"); put("pehli", "पहली"); put("doosri", "दूसरी"); put("teesri", "तीसरी")
+        put("saadhe", "साढ़े"); put("sawa", "सवा"); put("paune", "पौने"); put("dedh", "डेढ़"); put("dhai", "ढाई")
+        put("degree", "डिग्री"); put("bangalore", "बैंगलोर"); put("bengaluru", "बेंगलुरु")
+        put("tak", "तक"); put("bas", "बस"); put("sirf", "सिर्फ़"); put("ab", "अब"); put("kahin", "कहीं")
+        put("yahan", "यहाँ"); put("wahan", "वहाँ"); put("idhar", "इधर"); put("udhar", "उधर")
+        put("upar", "ऊपर"); put("neeche", "नीचे"); put("andar", "अंदर"); put("bahar", "बाहर")
+        put("saath", "साथ"); put("paas", "पास"); put("door", "दूर"); put("aapse", "आपसे")
+        put("hamesha", "हमेशा"); put("kabhi", "कभी"); put("jaldi", "जल्दी"); put("der", "देर")
+        put("dekh", "देख"); put("dekho", "देखो"); put("suno", "सुनो"); put("chalo", "चलो")
+        put("lagta", "लगता"); put("lagti", "लगती"); put("lagega", "लगेगा"); put("milega", "मिलेगा")
+        put("milegi", "मिलेगी"); put("jayega", "जाएगा"); put("jayegi", "जाएगी"); put("jaega", "जाएगा")
+        put("aayega", "आएगा"); put("aayegi", "आएगी"); put("hogaya", "हो गया"); put("karta", "करता")
+        put("karti", "करती"); put("karte", "करते"); put("karke", "करके"); put("kijiye", "कीजिए")
+        put("dijiye", "दीजिए"); put("rakhiye", "रखिए"); put("rakh", "रख"); put("rakha", "रखा")
+        put("tayyar", "तैयार"); put("taiyaar", "तैयार"); put("zaroor", "ज़रूर"); put("bilkul", "बिल्कुल")
+        put("garam", "गरम"); put("thanda", "ठंडा"); put("halki", "हल्की"); put("halka", "हल्का")
+        put("tez", "तेज़"); put("hawa", "हवा"); put("aasman", "आसमान"); put("saaf", "साफ़")
+        put("dhundh", "धुंध"); put("toofan", "तूफ़ान"); put("bijli", "बिजली"); put("chhata", "छाता")
+        put("ghar", "घर"); put("kaam", "काम"); put("din", "दिन"); put("hafte", "हफ़्ते"); put("mahine", "महीने")
+        put("agla", "अगला"); put("agli", "अगली"); put("agle", "अगले"); put("pichla", "पिछला")
+        put("baaki", "बाकी"); put("khatam", "ख़त्म"); put("shuru", "शुरू"); put("baje", "बजे")
+        put("bajkar", "बजकर"); put("aadha", "आधा"); put("pune", "पुणे"); put("dilli", "दिल्ली")
+        put("unka", "उनका"); put("unki", "उनकी"); put("unke", "उनके"); put("inka", "इनका")
+        put("sath", "साथ"); put("se", "से"); put("tha", "था"); put("rahenge", "रहेंगे")
+    }
+
+    /** Hinglish markers used by [detectLanguage] (unambiguous, never English words). */
+    private val HINGLISH_MARKERS = setOf(
+        "hai", "hain", "kya", "kal", "aaj", "mujhe", "mein", "aur", "nahi", "nahin", "ka", "ki", "ke",
+        "ko", "se", "karna", "kar", "baje", "subah", "shaam", "meri", "mera", "mere", "aap", "aapka",
+        "aapki", "aapke", "aapko", "kab", "hoga", "hogi", "rahega", "rahegi", "gaya", "gayi", "diya",
+        "liye", "theek", "accha", "haan", "ji", "bhi", "tha", "thi", "kaise", "kyun", "baarish", "mausam",
+        "maine", "sambhavna", "tak", "wala", "wali", "abhi", "sakte", "chahiye", "hum", "yeh", "woh",
     )
+    private val ENGLISH_MARKERS = setOf(
+        "the", "is", "are", "you", "your", "what", "will", "with", "of", "and", "for", "have", "has",
+        "it", "this", "that", "be", "can", "set", "at", "tomorrow", "today", "an", "i", "my", "there",
+        "here", "expect", "high", "low", "degrees", "o'clock", "please", "next", "done",
+    )
+
+    // =========================================================================
+    //  Numbers
+    // =========================================================================
+    private val HI_NUM: Array<String> = arrayOf(
+        "शून्य", "एक", "दो", "तीन", "चार", "पाँच", "छह", "सात", "आठ", "नौ",
+        "दस", "ग्यारह", "बारह", "तेरह", "चौदह", "पंद्रह", "सोलह", "सत्रह", "अठारह", "उन्नीस",
+        "बीस", "इक्कीस", "बाईस", "तेईस", "चौबीस", "पच्चीस", "छब्बीस", "सत्ताईस", "अट्ठाईस", "उनतीस",
+        "तीस", "इकतीस", "बत्तीस", "तैंतीस", "चौंतीस", "पैंतीस", "छत्तीस", "सैंतीस", "अड़तीस", "उनतालीस",
+        "चालीस", "इकतालीस", "बयालीस", "तैंतालीस", "चवालीस", "पैंतालीस", "छियालीस", "सैंतालीस", "अड़तालीस", "उनचास",
+        "पचास", "इक्यावन", "बावन", "तिरेपन", "चौवन", "पचपन", "छप्पन", "सत्तावन", "अट्ठावन", "उनसठ",
+        "साठ", "इकसठ", "बासठ", "तिरेसठ", "चौंसठ", "पैंसठ", "छियासठ", "सड़सठ", "अड़सठ", "उनहत्तर",
+        "सत्तर", "इकहत्तर", "बहत्तर", "तिहत्तर", "चौहत्तर", "पचहत्तर", "छिहत्तर", "सतहत्तर", "अठहत्तर", "उन्यासी",
+        "अस्सी", "इक्यासी", "बयासी", "तिरासी", "चौरासी", "पचासी", "छियासी", "सत्तासी", "अट्ठासी", "नवासी",
+        "नब्बे", "इक्यानबे", "बानबे", "तिरानबे", "चौरानबे", "पचानबे", "छियानबे", "सत्तानबे", "अट्ठानबे", "निन्यानबे",
+    )
+    private val EN_ONES = arrayOf(
+        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+        "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen",
+    )
+    private val EN_TENS = arrayOf("", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety")
+
+    /** Hindi number words, 0..99,99,999 (Indian grouping: सौ, हज़ार, लाख). */
+    fun hindiNumber(n: Long): String = when {
+        n < 0 -> "माइनस " + hindiNumber(-n)
+        n < 100 -> HI_NUM[n.toInt()]
+        n < 1000 -> {
+            val h = HI_NUM[(n / 100).toInt()] + " सौ"
+            if (n % 100 == 0L) h else h + " " + hindiNumber(n % 100)
+        }
+        n < 100_000 -> {
+            val t = hindiNumber(n / 1000) + " हज़ार"
+            if (n % 1000 == 0L) t else t + " " + hindiNumber(n % 1000)
+        }
+        n < 10_000_000 -> {
+            val l = hindiNumber(n / 100_000) + " लाख"
+            if (n % 100_000 == 0L) l else l + " " + hindiNumber(n % 100_000)
+        }
+        else -> n.toString().map { HI_NUM[it - '0'] }.joinToString(" ")
+    }
+
+    /** English number words (Roman), 0..999,999. */
+    fun englishNumber(n: Long): String = when {
+        n < 0 -> "minus " + englishNumber(-n)
+        n < 20 -> EN_ONES[n.toInt()]
+        n < 100 -> EN_TENS[(n / 10).toInt()] + if (n % 10 != 0L) " " + EN_ONES[(n % 10).toInt()] else ""
+        n < 1000 -> EN_ONES[(n / 100).toInt()] + " hundred" + if (n % 100 != 0L) " " + englishNumber(n % 100) else ""
+        n < 1_000_000 -> englishNumber(n / 1000) + " thousand" + if (n % 1000 != 0L) " " + englishNumber(n % 1000) else ""
+        else -> n.toString().map { EN_ONES[it - '0'] }.joinToString(" ")
+    }
 
     private val DEV_DIGIT = mapOf(
         '०' to '0', '१' to '1', '२' to '2', '३' to '3', '४' to '4',
@@ -202,7 +348,7 @@ object HinglishCodec {
         if (rawText.isBlank()) return ""
         val out = ArrayList<String>()
         for (raw in tokenize(rawText)) {
-            if (raw in PUNCT) { out.add(raw); continue }
+            if (raw in PUNCT) { out.add(if (raw == "।" || raw == "॥") "." else raw); continue }
             val tok = normalizeDigits(raw)
             when {
                 !isDevanagari(tok) -> out.add(applyHomophoneFix(tok))            // already Roman / numeric
@@ -215,6 +361,16 @@ object HinglishCodec {
 
     private fun applyHomophoneFix(token: String): String =
         HOMOPHONE_FIX[token.lowercase()] ?: token
+
+    private val RE_NUM_STUTTER = Regex("""\b(\d{1,2})(?:\s*-\s*\1\b)+""")
+    private val RE_WORD_STUTTER = Regex("""\b(\p{L}+)(?:\s+\1\b)+""", RegexOption.IGNORE_CASE)
+
+    /**
+     * Removes Whisper-tiny decoding stutters before the transcript reaches the LLM:
+     * `7-7 baji` -> `7 baji` (which an LLM would otherwise read as 7:07), `the the` -> `the`.
+     */
+    fun cleanAsrText(text: String): String =
+        RE_WORD_STUTTER.replace(RE_NUM_STUTTER.replace(text, "$1"), "$1").replace(Regex("""\s{2,}"""), " ").trim()
 
     /**
      * Algorithmic Devanagari -> Roman (Hunterian-style) fallback for words not in
@@ -242,6 +398,7 @@ object HinglishCodec {
                 in H_VOWEL -> { flush(true); sb.append(H_VOWEL.getValue(c)) }
                 'ं', 'ँ' -> { flush(true); sb.append('n') }                            // anusvara/chandrabindu
                 'ः' -> { flush(true); sb.append("h") }                                      // visarga
+                '़' -> { /* nukta: keep base consonant */ }
                 else -> { flush(true); if (c.code in 0x20..0x7E) sb.append(c) }
             }
         }
@@ -252,28 +409,64 @@ object HinglishCodec {
     // =========================================================================
     //  2. TTS acoustic script: Roman/English + numerics -> phonetic Devanagari.
     // =========================================================================
-    private val RE_TEMP = Regex("""(\d+)\s*°?\s*([CF])\b""")
-    private val RE_TIME = Regex("""(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?""")
-    private val RE_AMPM = Regex("""(\d+)\s*(AM|PM|am|pm)""")
+    private val RE_TEMP = Regex("""(-?\d+(?:\.\d+)?)\s*°\s*([CF])\b|(-?\d+(?:\.\d+)?)\s*([CF])\b(?![a-zA-Z])""")
+    private val RE_TIME = Regex("""\b(\d{1,2}):(\d{2})\s*([AaPp])\.?\s*[Mm]\b\.?|\b(\d{1,2}):(\d{2})\b""")
+    private val RE_AMPM = Regex("""\b(\d{1,2})\s*([AaPp])\.?\s*[Mm]\b\.?""")
+    private val RE_PERCENT = Regex("""(\d+(?:\.\d+)?)\s*%""")
+    private val RE_DECIMAL = Regex("""\b(\d+)\.(\d+)\b""")
+    private val RE_ORDINAL = Regex("""\b(\d+)(st|nd|rd|th)\b""")
     private val RE_NUM = Regex("""\d+""")
 
-    fun toAcousticDevanagariScript(displayText: String): String {
+    private val EN_ORDINAL = mapOf(
+        1 to "first", 2 to "second", 3 to "third", 4 to "fourth", 5 to "fifth", 6 to "sixth", 7 to "seventh",
+        8 to "eighth", 9 to "ninth", 10 to "tenth", 11 to "eleventh", 12 to "twelfth", 13 to "thirteenth",
+        14 to "fourteenth", 15 to "fifteenth", 16 to "sixteenth", 17 to "seventeenth", 18 to "eighteenth",
+        19 to "nineteenth", 20 to "twentieth", 30 to "thirtieth",
+    )
+
+    /** "en" if [text] reads as English, else "hi" (Hinglish/Hindi, also the default). */
+    fun detectLanguage(text: String): String {
+        if (isDevanagari(text)) return "hi"
+        var hi = 0
+        var en = 0
+        for (w in Regex("[A-Za-z']+").findAll(text)) {
+            val lw = w.value.lowercase()
+            if (lw in HINGLISH_MARKERS) hi++
+            if (lw in ENGLISH_MARKERS) en++
+        }
+        return if (en > hi) "en" else "hi"
+    }
+
+    /**
+     * Display text (Roman Hinglish / English / Devanagari) -> phonetic Devanagari for the
+     * Indic VITS voice. [language] is "en", "hi", or "auto" ([detectLanguage]).
+     */
+    fun toAcousticDevanagariScript(displayText: String, language: String = "auto"): String {
         if (displayText.isBlank()) return ""
+        val lang = if (language == "en" || language == "hi") language else detectLanguage(displayText)
+        val en = lang == "en"
         var s = normalizeDigits(displayText)
+        s = s.replace(Regex("""\[ACTION:[^\]]*]"""), " ")
+            .replace(Regex("[–—]"), ", ").replace('“', ' ').replace('”', ' ').replace('"', ' ')
 
         s = RE_TEMP.replace(s) { m ->
-            val unit = if (m.groupValues[2].uppercase() == "C") "सेल्सियस" else "फ़ारेनहाइट"
-            "${hindiNumber(m.groupValues[1])} डिग्री $unit"
+            val num = m.groupValues[1].ifEmpty { m.groupValues[3] }
+            val unitC = (m.groupValues[2].ifEmpty { m.groupValues[4] }).uppercase() == "C"
+            val unit = if (unitC) "celsius" else "fahrenheit"
+            " " + number(num, en) + (if (en) " degrees " else " डिग्री ") + unit + " "
         }
         s = RE_TIME.replace(s) { m ->
-            val hour = hindiNumber(m.groupValues[1])
-            val min = m.groupValues[2]
-            val minPart = if (min == "00") "" else " ${hindiNumber(min)}"
-            val ap = ampmWords(m.groupValues[3])
-            "$hour$minPart$ap"
+            if (m.groupValues[1].isNotEmpty()) timePhrase(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.groupValues[3], en)
+            else timePhrase(m.groupValues[4].toInt(), m.groupValues[5].toInt(), "", en)
         }
-        s = RE_AMPM.replace(s) { m -> "${hindiNumber(m.groupValues[1])}${ampmWords(m.groupValues[2])}" }
-        s = RE_NUM.replace(s) { m -> hindiNumber(m.value) }
+        s = RE_AMPM.replace(s) { m -> " " + number(m.groupValues[1], en) + ampm(m.groupValues[2]) + " " }
+        s = RE_PERCENT.replace(s) { m -> " " + number(m.groupValues[1], en) + (if (en) " percent " else " प्रतिशत ") }
+        s = RE_ORDINAL.replace(s) { m ->
+            val n = m.groupValues[1].toInt()
+            " " + (if (en) EN_ORDINAL[n] ?: englishNumber(n.toLong()) else hindiNumber(n.toLong())) + " "
+        }
+        s = RE_DECIMAL.replace(s) { m -> " " + number(m.value, en) + " " }
+        s = RE_NUM.replace(s) { m -> " " + number(m.value, en) + " " }
 
         // Word-level Roman/English -> Devanagari; Devanagari & punctuation pass through.
         val out = ArrayList<String>()
@@ -281,43 +474,140 @@ object HinglishCodec {
             when {
                 tok in PUNCT -> out.add(tok)
                 isDevanagari(tok) -> out.add(tok)
-                else -> out.add(ROMAN_TO_DEV[tok.lowercase()] ?: romanToDevFallback(tok))
+                else -> {
+                    val parts = tok.split('-', '/', '_').filter { it.isNotEmpty() }
+                    for (p in parts) wordToDevanagari(p, en).takeIf { it.isNotBlank() }?.let { out.add(it) }
+                }
             }
         }
         return join(out)
     }
 
-    private fun ampmWords(raw: String): String = when (raw.uppercase()) {
-        "AM" -> " ए एम"
-        "PM" -> " पी एम"
+    /** Spoken number (integer or decimal) in the requested language; Roman words for EN. */
+    private fun number(raw: String, en: Boolean): String {
+        val parts = raw.split('.')
+        val whole = parts[0].toLongOrNull() ?: return raw
+        val base = if (en) englishNumber(whole) else hindiNumber(whole)
+        if (parts.size < 2 || parts[1].isEmpty()) return base
+        val frac = parts[1].map { d -> if (en) EN_ONES[d - '0'] else HI_NUM[d - '0'] }.joinToString(" ")
+        return base + (if (en) " point " else " दशमलव ") + frac
+    }
+
+    private fun ampm(letter: String): String = when (letter.uppercase()) {
+        "A" -> " ए एम"
+        "P" -> " पी एम"
         else -> ""
     }
 
-    private fun hindiNumber(numStr: String): String {
-        val n = numStr.toIntOrNull() ?: return numStr
-        NUM_TO_HINDI[n]?.let { return it }
-        // Digit-by-digit fallback for out-of-table numbers.
-        return numStr.map { NUM_TO_HINDI[it.digitToIntOrNull() ?: -1] ?: it.toString() }
-            .joinToString(" ")
+    /** Spoken clock time: Hindi uses सवा / साढ़े / पौने, English "four thirty". */
+    private fun timePhrase(h: Int, m: Int, ap: String, en: Boolean): String {
+        val suffix = ampm(ap)
+        val phrase = if (en) {
+            when {
+                m == 0 -> englishNumber(h.toLong())
+                m < 10 -> englishNumber(h.toLong()) + " o " + englishNumber(m.toLong())
+                else -> englishNumber(h.toLong()) + " " + englishNumber(m.toLong())
+            }
+        } else {
+            val h12 = if (h % 12 == 0) 12 else h % 12
+            val next = if (h12 == 12) 1 else h12 + 1
+            when (m) {
+                0 -> hindiNumber(h.toLong())
+                15 -> "सवा " + hindiNumber(h12.toLong())
+                30 -> when (h12) { 1 -> "डेढ़"; 2 -> "ढाई"; else -> "साढ़े " + hindiNumber(h12.toLong()) }
+                45 -> "पौने " + hindiNumber(next.toLong())
+                else -> hindiNumber(h.toLong()) + " " + hindiNumber(m.toLong())
+            }
+        }
+        return " $phrase$suffix "
     }
 
-    /** Lightweight Roman -> Devanagari phonetic fallback for unseen Latin words. */
-    private fun romanToDevFallback(word: String): String {
-        if (word.isEmpty()) return word
-        val lower = word.lowercase()
+    /** Routes one Latin token to Devanagari (see class doc for the priority order). */
+    private fun wordToDevanagari(token: String, en: Boolean): String {
+        val word = token.trim('\'', '’', '(', ')', '[', ']', '{', '}', '*', '#', '"')
+        if (word.isEmpty()) return ""
+        if (word.none { it.isLetter() }) return ""
+        val lw = word.lowercase().replace('’', '\'')
+        ROMAN_TO_DEV[lw]?.let { if (en || lw !in HINGLISH_TO_DEV) return it }
+        if (isAcronym(word)) return spellLetters(word)
+        if (!en) HINGLISH_TO_DEV[lw]?.let { return it }
+        englishLexicon?.phones(lw)?.let { if (en || !looksHinglish(lw)) return ArpabetDevanagari.convert(it, lw) }
+        if (en) HINGLISH_TO_DEV[lw]?.let { return it }
+        return romanHindiToDevanagari(lw)
+    }
+
+    private fun isAcronym(w: String): Boolean {
+        val letters = w.filter { it.isLetter() }
+        return letters.length >= 2 && letters.count { it.isUpperCase() } >= 2 &&
+            letters.count { it.isUpperCase() } >= letters.length - 1
+    }
+
+    private val LETTER_DEV = mapOf(
+        'a' to "ए", 'b' to "बी", 'c' to "सी", 'd' to "डी", 'e' to "ई", 'f' to "एफ़", 'g' to "जी",
+        'h' to "एच", 'i' to "आई", 'j' to "जे", 'k' to "के", 'l' to "एल", 'm' to "एम", 'n' to "एन",
+        'o' to "ओ", 'p' to "पी", 'q' to "क्यू", 'r' to "आर", 's' to "एस", 't' to "टी", 'u' to "यू",
+        'v' to "वी", 'w' to "डब्ल्यू", 'x' to "एक्स", 'y' to "वाई", 'z' to "ज़ेड",
+    )
+
+    private fun spellLetters(w: String): String =
+        w.lowercase().mapNotNull { LETTER_DEV[it] }.joinToString(" ")
+
+    /** Roman spellings that are clearly Hindi (long-vowel digraphs, retroflex/aspirate clusters). */
+    private fun looksHinglish(w: String): Boolean =
+        Regex("aa|ii|uu|bh|dh|gh|jh|kh|chh").containsMatchIn(w) && !w.endsWith("ing") && !w.endsWith("tion")
+
+    // --- Roman Hinglish -> Devanagari transliteration ------------------------
+    private val R_CONS: List<Pair<String, String>> = listOf(
+        "chh" to "छ", "kh" to "ख", "gh" to "घ", "ch" to "च", "jh" to "झ", "th" to "थ", "dh" to "ध",
+        "ph" to "फ", "bh" to "भ", "sh" to "श", "k" to "क", "g" to "ग", "c" to "क", "j" to "ज",
+        "t" to "त", "d" to "द", "n" to "न", "p" to "प", "b" to "ब", "m" to "म", "y" to "य", "r" to "र",
+        "l" to "ल", "v" to "व", "w" to "व", "s" to "स", "h" to "ह", "z" to "ज़", "f" to "फ़", "q" to "क़",
+        "x" to "क्स",
+    )
+    private val R_VOW: List<Triple<String, String, String>> = listOf(   // roman, matra, independent
+        Triple("aa", "ा", "आ"), Triple("ai", "ै", "ऐ"), Triple("au", "ौ", "औ"), Triple("ee", "ी", "ई"),
+        Triple("ii", "ी", "ई"), Triple("oo", "ू", "ऊ"), Triple("uu", "ू", "ऊ"), Triple("ei", "ै", "ऐ"),
+        Triple("ou", "ौ", "औ"), Triple("a", "", "अ"), Triple("i", "ि", "इ"), Triple("u", "ु", "उ"),
+        Triple("e", "े", "ए"), Triple("o", "ो", "ओ"),
+    )
+
+    /** ITRANS-like Roman Hindi -> Devanagari (final -a -> ा, final -i -> ी, n+C -> anusvara). */
+    fun romanHindiToDevanagari(word: String): String {
+        val w = word.lowercase().filter { it in 'a'..'z' }
         val sb = StringBuilder()
+        var open = false            // last emitted letter is a consonant without a vowel sign
         var i = 0
-        while (i < lower.length) {
-            val two = if (i + 1 < lower.length) lower.substring(i, i + 2) else ""
-            val di = R2D_DIGRAPH[two]
-            if (di != null) { sb.append(di); i += 2; continue }
-            sb.append(R2D_CHAR[lower[i]] ?: lower[i].toString())
-            i++
+        while (i < w.length) {
+            val v = R_VOW.firstOrNull { w.startsWith(it.first, i) }
+            if (v != null) {
+                val end = i + v.first.length >= w.length
+                val matra = when {
+                    end && v.first == "a" && open -> "ा"
+                    end && v.first == "i" && open -> "ी"
+                    else -> v.second
+                }
+                sb.append(if (open) matra else v.third)
+                open = false
+                i += v.first.length
+                continue
+            }
+            val c = R_CONS.firstOrNull { w.startsWith(it.first, i) }
+            if (c == null) { i++; continue }
+            val after = i + c.first.length
+            val nextIsCons = after < w.length && R_VOW.none { w.startsWith(it.first, after) }
+            if (c.first == "n" && !open && sb.isNotEmpty() && nextIsCons) {
+                sb.append("ं")                                     // n + consonant -> anusvara
+            } else {
+                if (open) sb.append("्")
+                sb.append(c.second)
+                open = true
+            }
+            i = after
         }
         return sb.toString()
     }
 
-    // --- Transliteration tables ---------------------------------------------
+    // --- Transliteration tables (Devanagari -> Roman) -------------------------
     private val H_CONS: Map<Char, String> = mapOf(
         'क' to "k", 'ख' to "kh", 'ग' to "g", 'घ' to "gh", 'ङ' to "ng",
         'च' to "ch", 'छ' to "chh", 'ज' to "j", 'झ' to "jh", 'ञ' to "ny",
@@ -325,27 +615,17 @@ object HinglishCodec {
         'त' to "t", 'थ' to "th", 'द' to "d", 'ध' to "dh", 'न' to "n",
         'प' to "p", 'फ' to "ph", 'ब' to "b", 'भ' to "bh", 'म' to "m",
         'य' to "y", 'र' to "r", 'ल' to "l", 'व' to "v", 'श' to "sh",
-        'ष' to "sh", 'स' to "s", 'ह' to "h", 'ळ' to "l", '\u0958' to "q",
-        '\u0959' to "kh", '\u095a' to "gh", '\u095b' to "z", '\u095c' to "r", '\u095d' to "rh", '\u095f' to "f",
+        'ष' to "sh", 'स' to "s", 'ह' to "h", 'ळ' to "l", 'क़' to "q",
+        'ख़' to "kh", 'ग़' to "gh", 'ज़' to "z", 'ड़' to "r", 'ढ़' to "rh", 'फ़' to "f",
+        'य़' to "y",
     )
     private val H_MATRA: Map<Char, String> = mapOf(
         'ा' to "aa", 'ि' to "i", 'ी' to "ee", 'ु' to "u",
         'ू' to "oo", 'ृ' to "ri", 'े' to "e", 'ै' to "ai",
-        'ो' to "o", 'ौ' to "au",
+        'ो' to "o", 'ौ' to "au", 'ॉ' to "o", 'ॅ' to "e",
     )
     private val H_VOWEL: Map<Char, String> = mapOf(
         'अ' to "a", 'आ' to "aa", 'इ' to "i", 'ई' to "ee", 'उ' to "u", 'ऊ' to "oo",
         'ऋ' to "ri", 'ए' to "e", 'ऐ' to "ai", 'ओ' to "o", 'औ' to "au", 'ऑ' to "o",
-    )
-    private val R2D_DIGRAPH: Map<String, String> = mapOf(
-        "ch" to "च", "sh" to "श", "th" to "थ", "ph" to "फ", "kh" to "ख", "gh" to "घ",
-        "oo" to "ू", "ee" to "ी", "aa" to "ा",
-    )
-    private val R2D_CHAR: Map<Char, String> = mapOf(
-        'a' to "अ", 'b' to "ब", 'c' to "क", 'd' to "ड", 'e' to "े", 'f' to "फ़",
-        'g' to "ग", 'h' to "ह", 'i' to "ि", 'j' to "ज", 'k' to "क", 'l' to "ल",
-        'm' to "म", 'n' to "न", 'o' to "ो", 'p' to "प", 'q' to "क", 'r' to "र",
-        's' to "स", 't' to "ट", 'u' to "ु", 'v' to "व", 'w' to "व", 'x' to "क्स",
-        'y' to "य", 'z' to "ज़",
     )
 }

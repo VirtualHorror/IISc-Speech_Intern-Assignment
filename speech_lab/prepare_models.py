@@ -14,10 +14,19 @@
 #
 #  Deploy artifacts written to app/src/main/assets/models/:
 #     vaani_stt_encoder.int8.onnx   vaani_stt_decoder.int8.onnx
-#     vaani_vad.onnx                vaani_tts_vits.int8.onnx
+#     vaani_stt_decoder_with_past.int8.onnx   (KV-cache decoder, Session 2)
+#     vaani_vad.onnx                vaani_tts_vits.fp16.onnx
+#
+#  Runtime contract: every graph must load on the APK's ONNX Runtime (Android
+#  1.18.0). ORT <= 1.22 has no ConvInteger kernel for int8 weights, so the encoder
+#  is re-quantized MatMul-only (its two front-end convs stay fp32) and the VITS voice
+#  ships fp16-stored / fp32-computed (INT8 ConvInteger VITS was also 3.2x SLOWER on
+#  CPU). speech_lab/check_ort_compat.py verifies this under onnxruntime==1.18.0.
 #     vaani_tts_config.json         vaani_mel_filters.bin
 #     vaani_vocab.json
+#  and app/src/main/assets/lexicon/vaani_en_cmudict.txt (English pronunciations).
 # =============================================================================
+import argparse
 import json
 import os
 import re
@@ -100,6 +109,47 @@ def set_metadata(path, source, licence):
         log(f"  metadata skip {os.path.basename(path)}: {type(e).__name__} {e}")
 
 
+def fp16_storage(src, dst, min_elems=16):
+    """fp32 graph -> fp16-stored weights + Cast(to=float) nodes. ORT constant-folds the
+    Casts at session creation, so inference runs at full fp32 speed/accuracy while the
+    file (and APK) is half the size."""
+    import numpy as np
+    import onnx
+    from onnx import TensorProto, helper, numpy_helper
+    m = onnx.load(src)
+    g = m.graph
+    casts, keep = [], []
+    for init in g.initializer:
+        if init.data_type == TensorProto.FLOAT and int(np.prod(init.dims)) >= min_elems:
+            h = numpy_helper.from_array(numpy_helper.to_array(init).astype(np.float16), init.name + "__fp16")
+            keep.append(h)
+            casts.append(helper.make_node("Cast", [h.name], [init.name], name=init.name + "__cast",
+                                          to=TensorProto.FLOAT))
+        else:
+            keep.append(init)
+    del g.initializer[:]
+    g.initializer.extend(keep)
+    nodes = list(g.node)
+    del g.node[:]
+    g.node.extend(casts + nodes)
+    onnx.save(m, dst)
+    log(f"  fp16-storage -> {os.path.basename(dst)} ({os.path.getsize(src)/1e6:.1f}MB -> "
+        f"{os.path.getsize(dst)/1e6:.1f}MB, {len(casts)} weight tensors)")
+
+
+def quantize_matmul_int8(src, dst):
+    """Dynamic INT8 for MatMul only (DynamicQuantizeLinear + MatMulInteger, both supported
+    by ORT 1.18 for int8 weights); Conv stays fp32 because ConvInteger(int8) is not."""
+    from onnxruntime.quantization import QuantType, quantize_dynamic
+    from onnxruntime.quantization.shape_inference import quant_pre_process
+    tmp = dst + ".pre.onnx"
+    quant_pre_process(src, tmp)
+    quantize_dynamic(tmp, dst, weight_type=QuantType.QInt8, op_types_to_quantize=["MatMul"])
+    os.remove(tmp)
+    log(f"  MatMul-only INT8 -> {os.path.basename(dst)} "
+        f"({os.path.getsize(src)/1e6:.1f}MB -> {os.path.getsize(dst)/1e6:.1f}MB)")
+
+
 def quantize_int8(src, dst):
     from onnxruntime.quantization import quantize_dynamic, QuantType
     try:
@@ -121,6 +171,69 @@ def quantize_int8(src, dst):
         log(f"  quantize failed ({type(e).__name__}: {e}); copying source")
         shutil.copyfile(src, dst)
         return False
+
+
+def fuse_tied_logits_int8(path):
+    """Rewrites the tied-embedding output projection of an INT8 Whisper decoder.
+
+    The community INT8 export computes logits as
+        MatMul(h, DequantizeLinear(Transpose(W_q)))      W_q: uint8 [51865, 384]
+    and ORT never constant-folds DequantizeLinear, so EVERY decoding step
+    de-quantises the whole 51865x384 table to fp32 (~80 MB) before a float GEMV:
+    ~75% of a KV-cached step. We replace it with the same INT8 kernel every other
+    projection in the graph already uses:
+        logits = com.microsoft.DynamicQuantizeMatMul(h, W_qT, scale, zero_point)
+    and re-point the token-embedding Gather at that single transposed table
+    (Gather(axis=1) + Transpose), so the file does not grow.
+    """
+    import numpy as np
+    import onnx
+    from onnx import helper, numpy_helper
+
+    m = onnx.load(path)
+    g = m.graph
+    inits = {i.name: i for i in g.initializer}
+    wq_name = "model.decoder.embed_tokens.weight_quantized"
+    if wq_name not in inits:
+        log(f"  tied-logits fusion: {os.path.basename(path)} already rewritten / unknown layout")
+        return False
+    prod = {o: n for n in g.node for o in n.output}
+    tr = next(n for n in g.node if n.op_type == "Transpose" and n.input[0] == wq_name)
+    dq = next(n for n in g.node if n.op_type == "DequantizeLinear" and n.input[0] == tr.output[0])
+    mm = next(n for n in g.node if n.op_type == "MatMul" and dq.output[0] in n.input)
+    gather = next(n for n in g.node if n.op_type == "Gather" and n.input[0] == wq_name)
+    scale, zp = dq.input[1], dq.input[2]
+    act = mm.input[0] if mm.input[1] == dq.output[0] else mm.input[1]
+
+    wt = np.ascontiguousarray(numpy_helper.to_array(inits[wq_name]).T)        # [384, 51865]
+    wt_name = "model.decoder.embed_tokens.weight_t_quantized"
+    g.initializer.remove(inits[wq_name])
+    g.initializer.append(numpy_helper.from_array(wt, wt_name))
+
+    gather_out = gather.output[0]
+    tmp = gather_out + "_axis1"
+    new_nodes = []
+    for n in g.node:
+        if n is tr or n is dq:
+            continue
+        if n is gather:
+            new_nodes.append(helper.make_node("Gather", [wt_name, n.input[1]], [tmp], name=n.name, axis=1))
+            new_nodes.append(helper.make_node("Transpose", [tmp], [gather_out], name=n.name + "_to_bld",
+                                              perm=[1, 2, 0]))
+            continue
+        if n is mm:
+            new_nodes.append(helper.make_node("DynamicQuantizeMatMul", [act, wt_name, scale, zp],
+                                              list(mm.output), name="/proj_out/DynamicQuantizeMatMul",
+                                              domain="com.microsoft"))
+            continue
+        new_nodes.append(n)
+    del g.node[:]
+    g.node.extend(new_nodes)
+    if not any(o.domain == "com.microsoft" for o in m.opset_import):
+        m.opset_import.append(helper.make_opsetid("com.microsoft", 1))
+    onnx.save(m, path)
+    log(f"  tied-logits fusion: {os.path.basename(path)} -> DynamicQuantizeMatMul (no per-step table dequant)")
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -212,6 +325,27 @@ def token_bytes(tok):
         return None
 
 
+def whisper_non_speech_tokens(tokenizer_json):
+    """Exact port of whisper.tokenizer.Tokenizer.non_speech_tokens: speaker tags, music
+    notes and bracketed annotations that Whisper suppresses during decoding."""
+    try:
+        from tokenizers import Tokenizer
+    except ImportError:
+        log("  (tokenizers not installed: non_speech_token_ids left empty)")
+        return []
+    tk = Tokenizer.from_file(tokenizer_json)
+    enc = lambda t: tk.encode(t, add_special_tokens=False).ids  # noqa: E731
+    symbols = list('"#()*+/:;<=>@[\\]^_`{|}~「」『』')
+    symbols += "<< >> <<< >>> -- --- -( -[ (' (\" (( )) ((( ))) [[ ]] {{ }} ♪♪ ♪♪♪".split()
+    miscellaneous = set("♩♪♫♬♭♮♯")
+    result = {enc(" -")[0], enc(" '")[0]}
+    for symbol in symbols + list(miscellaneous):
+        for tokens in (enc(symbol), enc(" " + symbol)):
+            if len(tokens) == 1 or symbol in miscellaneous:
+                result.add(tokens[0])
+    return sorted(result)
+
+
 def build_vocab_json(tokenizer_json, vocab_json, out_path):
     with open(tokenizer_json, encoding="utf-8") as f:
         tk = json.load(f)
@@ -271,6 +405,9 @@ def build_vocab_json(tokenizer_json, vocab_json, out_path):
         if any(is_disallowed_cp(ord(ch)) for ch in text):
             suppressed.append(i)
 
+    non_speech = whisper_non_speech_tokens(tokenizer_json)
+    blank = base.get("\u0120", 220)   # "Ġ" = a bare space, suppressed on the first step
+
     out = {
         "model": "whisper-tiny-multilingual",
         "producer": PRODUCER,
@@ -278,26 +415,95 @@ def build_vocab_json(tokenizer_json, vocab_json, out_path):
         "special_tokens": specials,
         "language_tokens": language_tokens,
         "suppressed_token_ids": suppressed,
+        "non_speech_token_ids": non_speech,
+        "blank_token_id": blank,
         "tokens": id_to_token,
     }
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False)
     log(f"  vaani_vocab.json: vocab={vocab_size}, langs={len(language_tokens)}, "
-        f"suppressed={len(suppressed)} (hi id={language_tokens.get('hi')})")
+        f"suppressed={len(suppressed)}, non_speech={len(non_speech)} "
+        f"(hi id={language_tokens.get('hi')}, en id={language_tokens.get('en')})")
 
 
 # ---------------------------------------------------------------------------
 #  Main pipeline.
 # ---------------------------------------------------------------------------
+CMUDICT_URL = "https://raw.githubusercontent.com/cmusphinx/cmudict/master/cmudict.dict"
+CMUDICT_LICENSE_URL = "https://raw.githubusercontent.com/cmusphinx/cmudict/master/LICENSE"
+LEXICON_DIR = os.path.abspath(os.path.join(ASSETS, "..", "lexicon"))
+
+
+def prepare_lexicon():
+    """CMU Pronouncing Dictionary -> sorted 'word ARPABET...' asset for the on-device
+    English->Devanagari path of HinglishCodec (BSD-style licence kept in the header)."""
+    log("CMU Pronouncing Dictionary (English lexicon)")
+    raw = url_download(CMUDICT_URL, f"{RAW}/cmudict.dict")
+    lic = url_download(CMUDICT_LICENSE_URL, f"{RAW}/cmudict.LICENSE")
+    if not raw or not lic:
+        log("  ERROR: cmudict not obtained")
+        return False
+    entries = {}
+    word_re = re.compile(r"^[a-z][a-z']{0,19}$")
+    with open(raw, encoding="utf-8") as f:
+        for line in f:
+            line = line.split("#", 1)[0].strip()
+            if not line or line.startswith(";;;"):
+                continue
+            word, _, phones = line.partition(" ")
+            if "(" in word or not word_re.match(word) or word in entries:
+                continue                                  # first pronunciation only
+            entries[word] = " ".join(phones.split())
+    os.makedirs(LEXICON_DIR, exist_ok=True)
+    out = os.path.join(LEXICON_DIR, "vaani_en_cmudict.txt")
+    with open(lic, encoding="utf-8") as f:
+        licence = [";;; " + l.rstrip() for l in f]
+    with open(out, "w", encoding="utf-8", newline="\n") as f:
+        f.write(";;; VaaniEdge English lexicon: first pronunciation of each [a-z'] word from the\n")
+        f.write(";;; CMU Pronouncing Dictionary (github.com/cmusphinx/cmudict), sorted for binary search.\n")
+        f.write("\n".join(licence) + "\n")
+        for w in sorted(entries):
+            f.write(f"{w} {entries[w]}\n")
+    log(f"  vaani_en_cmudict.txt: {len(entries)} words, {os.path.getsize(out) / 1e6:.2f} MB")
+    return True
+
+
+STEPS = ("stt", "vocab", "vad", "tts", "mel", "lexicon")
+
+
 def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--only", default=",".join(STEPS),
+                    help=f"comma-separated subset of {STEPS} (default: all)")
+    only = set(ap.parse_args().only.split(","))
     ok = True
 
-    # 1) Whisper tiny multilingual INT8 encoder/decoder (non-merged decoder).
+    # 1) Whisper tiny multilingual INT8 encoder + decoder + KV-cache decoder_with_past.
+    if "stt" in only or "vocab" in only:
+        ok = prepare_whisper(only) and ok
+    if "vad" in only:
+        ok = prepare_vad() and ok
+    if "tts" in only:
+        ok = prepare_tts() and ok
+    if "mel" in only:
+        prepare_mel()
+    if "lexicon" in only:
+        ok = prepare_lexicon() and ok
+    ok = report_assets() and ok
+    if not ok:
+        log("FAILED: one or more assets missing/oversized")
+        sys.exit(1)
+    log("OK: all deployment assets prepared")
+
+
+def prepare_whisper(only):
+    ok = True
     log("Whisper tiny (multilingual, INT8)")
+    # fp32 encoder, re-quantized MatMul-only below (the community INT8 encoder uses
+    # ConvInteger with int8 weights, which ORT Android 1.18 cannot load).
     enc = hf_first([
-        ("onnx-community/whisper-tiny", "onnx/encoder_model_int8.onnx"),
-        ("Xenova/whisper-tiny", "onnx/encoder_model_int8.onnx"),
-        ("Xenova/whisper-tiny", "onnx/encoder_model_quantized.onnx"),
+        ("onnx-community/whisper-tiny", "onnx/encoder_model.onnx"),
+        ("Xenova/whisper-tiny", "onnx/encoder_model.onnx"),
     ])
     dec = hf_first([
         ("onnx-community/whisper-tiny", "onnx/decoder_model_int8.onnx"),
@@ -312,21 +518,34 @@ def main():
         ("Xenova/whisper-tiny", "vocab.json"),
         ("onnx-community/whisper-tiny", "vocab.json"),
     ])
-    if enc and dec:
-        shutil.copyfile(enc, f"{ASSETS}/vaani_stt_encoder.int8.onnx")
-        shutil.copyfile(dec, f"{ASSETS}/vaani_stt_decoder.int8.onnx")
-        set_metadata(f"{ASSETS}/vaani_stt_encoder.int8.onnx", "openai/whisper-tiny", "MIT")
-        set_metadata(f"{ASSETS}/vaani_stt_decoder.int8.onnx", "openai/whisper-tiny", "MIT")
-    else:
-        ok = False
-        log("  ERROR: Whisper encoder/decoder not obtained")
-    if tok_json:
-        build_vocab_json(tok_json, voc_json, f"{ASSETS}/vaani_vocab.json")
-    else:
-        ok = False
-        log("  ERROR: Whisper tokenizer.json not obtained")
+    # KV-cache decoder: one new token per call, consumes past_key_values.{0-3}.{decoder,encoder}.*
+    dec_past = hf_first([
+        ("onnx-community/whisper-tiny", "onnx/decoder_with_past_model_int8.onnx"),
+        ("Xenova/whisper-tiny", "onnx/decoder_with_past_model_quantized.onnx"),
+    ])
+    if "stt" in only:
+        if enc and dec and dec_past:
+            quantize_matmul_int8(enc, f"{ASSETS}/vaani_stt_encoder.int8.onnx")
+            set_metadata(f"{ASSETS}/vaani_stt_encoder.int8.onnx", "openai/whisper-tiny", "MIT")
+            for src, name in ((dec, "vaani_stt_decoder.int8.onnx"),
+                              (dec_past, "vaani_stt_decoder_with_past.int8.onnx")):
+                shutil.copyfile(src, f"{ASSETS}/{name}")
+                fuse_tied_logits_int8(f"{ASSETS}/{name}")
+                set_metadata(f"{ASSETS}/{name}", "openai/whisper-tiny", "MIT")
+        else:
+            ok = False
+            log("  ERROR: Whisper encoder/decoder/decoder_with_past not obtained")
+    if "vocab" in only:
+        if tok_json:
+            build_vocab_json(tok_json, voc_json, f"{ASSETS}/vaani_vocab.json")
+        else:
+            ok = False
+            log("  ERROR: Whisper tokenizer.json not obtained")
+    return ok
 
-    # 2) Silero VAD.
+
+def prepare_vad():
+    ok = True
     log("Silero VAD")
     vad = hf_first([
         ("onnx-community/silero-vad", "onnx/model.onnx"),
@@ -343,8 +562,11 @@ def main():
     else:
         ok = False
         log("  ERROR: Silero VAD not obtained")
+    return ok
 
-    # 3) Piper VITS Hindi -> genuine INT8 quantization.
+
+def prepare_tts():
+    ok = True
     log("Piper VITS (hi_IN)")
     vits = hf_first([
         ("rhasspy/piper-voices", "hi/hi_IN/rohan/medium/hi_IN-rohan-medium.onnx"),
@@ -355,8 +577,12 @@ def main():
         ("rhasspy/piper-voices", "hi/hi_IN/pratham/medium/hi_IN-pratham-medium.onnx.json"),
     ])
     if vits:
-        quantize_int8(vits, f"{ASSETS}/vaani_tts_vits.int8.onnx")
-        set_metadata(f"{ASSETS}/vaani_tts_vits.int8.onnx", "rhasspy/piper (hi_IN)", "MIT")
+        fp16_storage(vits, f"{ASSETS}/vaani_tts_vits.fp16.onnx")
+        set_metadata(f"{ASSETS}/vaani_tts_vits.fp16.onnx", "rhasspy/piper (hi_IN)", "MIT")
+        legacy = f"{ASSETS}/vaani_tts_vits.int8.onnx"
+        if os.path.exists(legacy):
+            os.remove(legacy)          # ConvInteger(int8): unloadable on ORT 1.18, 3.2x slower
+            log("  removed legacy vaani_tts_vits.int8.onnx")
     else:
         ok = False
         log("  ERROR: Piper VITS not obtained")
@@ -365,8 +591,10 @@ def main():
     else:
         ok = False
         log("  ERROR: Piper config not obtained")
+    return ok
 
-    # 4) Whisper Slaney Mel filterbank -> raw float32 LE binary for the NEON DSP.
+
+def prepare_mel():
     log("Mel filterbank")
     fb = mel_filterbank()
     assert fb.shape == (N_MELS, N_FFT_BINS), fb.shape
@@ -374,7 +602,9 @@ def main():
     log(f"  vaani_mel_filters.bin: shape={fb.shape}, "
         f"{os.path.getsize(f'{ASSETS}/vaani_mel_filters.bin')} bytes, sum={fb.sum():.4f}")
 
-    # Report asset sizes + 100MB guard.
+
+def report_assets():
+    ok = True
     log("Assets:")
     too_big = []
     for name in sorted(os.listdir(ASSETS)):
@@ -385,11 +615,7 @@ def main():
     if too_big:
         ok = False
         log(f"  ERROR: files exceed GitHub-safe 95MB: {too_big}")
-
-    if not ok:
-        log("FAILED: one or more assets missing/oversized")
-        sys.exit(1)
-    log("OK: all deployment assets prepared")
+    return ok
 
 
 if __name__ == "__main__":

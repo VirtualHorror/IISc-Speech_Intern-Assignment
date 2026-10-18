@@ -10,9 +10,10 @@
 #
 #  Output: speech_lab/evaluation_metrics.json  (+ stdout tensor signatures).
 #
-#  NOTE: RTF figures are *analytical projections* (no on-device runs happen in
-#  this host-only session). They are explicitly labelled and must be validated
-#  on the OnePlus 11R in a later session.
+#  NOTE: the "projected_*" figures are analytical planning numbers only. MEASURED
+#  host latencies/accuracy come from verify_closed_loop.py ("closed_loop"), live
+#  on-device numbers from the app's telemetry HUD / logcat (tag VaaniTelemetry).
+#  This script only rewrites the "models" and "totals" keys of the report.
 # =============================================================================
 import glob
 import json
@@ -53,7 +54,7 @@ def param_count(path):
 def raw_fp32_size(basename_contains):
     for p in glob.glob(f"{RAW}/**/*.onnx", recursive=True):
         b = os.path.basename(p).lower()
-        if basename_contains in b and "int8" not in b and "quant" not in b:
+        if basename_contains in b and not any(t in b for t in ("int8", "quant", "fp16", "q4", "bnb4", "uint8", "merged")):
             return os.path.getsize(p)
     return None
 
@@ -64,6 +65,9 @@ def project_rtf(params, kind):
     ref_audio_s = 5.0
     if kind == "stt_encoder":
         gflops = 2 * params * 1500 / 1e9      # fixed 30 s Mel window (1500 frames)
+        return round(gflops, 2), round(gflops / SD8PLUS_INT8_GOPS / ref_audio_s, 3)
+    if kind == "stt_decoder_with_past":
+        gflops = 2 * params * 32 / 1e9        # ~32 cached steps, one token each
         return round(gflops, 2), round(gflops / SD8PLUS_INT8_GOPS / ref_audio_s, 3)
     if kind == "stt_decoder":
         gflops = 2 * params * 32 / 1e9        # ~32 greedy tokens with KV-cache (Session 2)
@@ -82,7 +86,8 @@ def analyze(path, kind):
     size = os.path.getsize(path)
     params = param_count(path)
     fp32 = raw_fp32_size(
-        {"stt_encoder": "encoder", "stt_decoder": "decoder", "tts": "medium", "vad": "vad"}.get(kind, ""))
+        {"stt_encoder": "encoder_model.onnx", "stt_decoder": "decoder_model.onnx",
+         "stt_decoder_with_past": "decoder_with_past_model.onnx", "tts": "medium", "vad": "vad"}.get(kind, ""))
     theo_fp32 = params * 4
     gflops, rtf = project_rtf(params, kind)
     entry = {
@@ -115,15 +120,17 @@ def main():
     targets = [
         ("vaani_stt_encoder.int8.onnx", "stt_encoder"),
         ("vaani_stt_decoder.int8.onnx", "stt_decoder"),
+        ("vaani_stt_decoder_with_past.int8.onnx", "stt_decoder_with_past"),
         ("vaani_vad.onnx", "vad"),
-        ("vaani_tts_vits.int8.onnx", "tts"),
+        ("vaani_tts_vits.fp16.onnx", "tts"),
     ]
-    report = {
-        "target_device": "OnePlus 11R 5G (CPH2487) — Snapdragon 8+ Gen 1, arm64-v8a",
-        "rtf_disclaimer": "projected_from_param_counts_only; validate on-device in a later session",
-        "models": {},
-        "totals": {},
-    }
+    out = os.path.join(HERE, "evaluation_metrics.json")
+    report = json.load(open(out, encoding="utf-8")) if os.path.exists(out) else {}
+    report["target_device"] = "OnePlus 11R 5G (CPH2487) — Snapdragon 8+ Gen 1, arm64-v8a"
+    report["rtf_disclaimer"] = ("models.*.projected_* are analytical planning numbers; measured host numbers "
+                                "are in closed_loop, live phone numbers in the app HUD")
+    report["models"] = {}
+    report["totals"] = {}
     total_size = 0
     for name, kind in targets:
         path = os.path.join(ASSETS, name)
@@ -144,9 +151,10 @@ def main():
     report["totals"]["assets_dir_mb"] = round(
         sum(os.path.getsize(os.path.join(ASSETS, f)) for f in os.listdir(ASSETS)) / 1e6, 2)
 
-    out = os.path.join(HERE, "evaluation_metrics.json")
-    with open(out, "w", encoding="utf-8") as f:
+    tmp = out + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
+    os.replace(tmp, out)
     print(f"\nWrote {out}")
     print(f"Total model size: {report['totals']['model_size_mb']} MB; "
           f"assets dir: {report['totals']['assets_dir_mb']} MB")

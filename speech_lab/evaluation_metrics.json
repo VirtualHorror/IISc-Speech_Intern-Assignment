@@ -1,13 +1,13 @@
 {
   "target_device": "OnePlus 11R 5G (CPH2487) — Snapdragon 8+ Gen 1, arm64-v8a",
-  "rtf_disclaimer": "projected_from_param_counts_only; validate on-device in a later session",
+  "rtf_disclaimer": "models.*.projected_* are analytical planning numbers; measured host numbers are in closed_loop, live phone numbers in the app HUD",
   "models": {
     "vaani_stt_encoder.int8.onnx": {
       "file": "vaani_stt_encoder.int8.onnx",
-      "size_mb": 10.125,
-      "param_count": 8208442,
+      "size_mb": 11.702,
+      "param_count": 8208473,
       "theoretical_fp32_mb": 32.834,
-      "int8_size_reduction_pct": 69.16,
+      "int8_size_reduction_pct": 64.36,
       "inputs": [
         {
           "name": "input_features",
@@ -31,7 +31,9 @@
         }
       ],
       "projected_gflops_per_inference": 24.63,
-      "projected_rtf_sd8plus_gen1": 0.09
+      "projected_rtf_sd8plus_gen1": 0.09,
+      "measured_fp32_mb": 32.905,
+      "measured_reduction_pct": 64.44
     },
     "vaani_stt_decoder.int8.onnx": {
       "file": "vaani_stt_decoder.int8.onnx",
@@ -230,7 +232,281 @@
         }
       ],
       "projected_gflops_per_inference": 1.89,
-      "projected_rtf_sd8plus_gen1": 0.007
+      "projected_rtf_sd8plus_gen1": 0.007,
+      "measured_fp32_mb": 118.397,
+      "measured_reduction_pct": 74.27
+    },
+    "vaani_stt_decoder_with_past.int8.onnx": {
+      "file": "vaani_stt_decoder_with_past.int8.onnx",
+      "size_mb": 29.221,
+      "param_count": 28371138,
+      "theoretical_fp32_mb": 113.485,
+      "int8_size_reduction_pct": 74.25,
+      "inputs": [
+        {
+          "name": "input_ids",
+          "shape": [
+            "batch_size",
+            1
+          ],
+          "type": "tensor(int64)"
+        },
+        {
+          "name": "past_key_values.0.decoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.0.decoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.0.encoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.0.encoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.1.decoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.1.decoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.1.encoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.1.encoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.2.decoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.2.decoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.2.encoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.2.encoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.3.decoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.3.decoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.3.encoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "past_key_values.3.encoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "logits",
+          "shape": [
+            "batch_size",
+            "1",
+            51865
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.0.decoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.0.decoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.1.decoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.1.decoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.2.decoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.2.decoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.3.decoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.3.decoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        }
+      ],
+      "projected_gflops_per_inference": 1.82,
+      "projected_rtf_sd8plus_gen1": 0.007,
+      "measured_fp32_mb": 113.639,
+      "measured_reduction_pct": 74.29
     },
     "vaani_vad.onnx": {
       "file": "vaani_vad.onnx",
@@ -284,12 +560,12 @@
       "projected_gflops_per_inference": 0.0,
       "projected_rtf_sd8plus_gen1": 0.0
     },
-    "vaani_tts_vits.int8.onnx": {
-      "file": "vaani_tts_vits.int8.onnx",
-      "size_mb": 18.344,
-      "param_count": 15651192,
-      "theoretical_fp32_mb": 62.605,
-      "int8_size_reduction_pct": 70.7,
+    "vaani_tts_vits.fp16.onnx": {
+      "file": "vaani_tts_vits.fp16.onnx",
+      "size_mb": 31.696,
+      "param_count": 15650548,
+      "theoretical_fp32_mb": 62.602,
+      "int8_size_reduction_pct": 49.37,
       "inputs": [
         {
           "name": "input",
@@ -329,16 +605,1044 @@
       "projected_gflops_per_inference": 5.01,
       "projected_rtf_sd8plus_gen1": 0.061,
       "measured_fp32_mb": 62.95,
-      "measured_reduction_pct": 70.86
+      "measured_reduction_pct": 49.65
     },
     "_assets": {
       "vaani_mel_filters.bin": 0.0643,
-      "vaani_vocab.json": 0.6662,
+      "vaani_vocab.json": 0.6667,
       "vaani_tts_config.json": 0.005
     }
   },
   "totals": {
-    "model_size_mb": 61.17,
-    "assets_dir_mb": 61.91
+    "model_size_mb": 105.32,
+    "assets_dir_mb": 106.06
+  },
+  "closed_loop_history": {
+    "session1_g2p_baseline": {
+      "generated_at": "2026-10-18T10:49:48+00:00",
+      "phoneme_coverage_pct": 99.75757575757575,
+      "espeak_segmental_match_pct": null,
+      "forced_cer_mean": 0.6208,
+      "auto_cer_mean": 0.6262,
+      "lid_accuracy_pct": 87.5
+    },
+    "session2_g2p_fp16tts_int8enc": {
+      "generated_at": "2026-10-18T11:18:04+00:00",
+      "phoneme_coverage_pct": 100,
+      "espeak_segmental_match_pct": 98.44,
+      "forced_cer_mean": 0.3472,
+      "auto_cer_mean": 0.3472,
+      "lid_accuracy_pct": 100.0
+    },
+    "session2_final": {
+      "generated_at": "2026-10-18T12:00:42+00:00",
+      "phoneme_coverage_pct": 100,
+      "espeak_segmental_match_pct": 98.44,
+      "forced_cer_mean": 0.31533,
+      "auto_cer_mean": 0.31533,
+      "lid_accuracy_pct": 100.0
+    }
+  },
+  "closed_loop": {
+    "label": "session2_final",
+    "generated_at": "2026-10-18T12:00:42+00:00",
+    "host": {
+      "cpu": "x86_64",
+      "cpu_model": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz",
+      "threads": 4,
+      "onnxruntime": "1.31.0",
+      "python": "3.12.3"
+    },
+    "measurement_note": "All latencies are measured on the host CPU above with the shipped INT8 graphs and the same ORT session options as the app; they are NOT phone numbers. The app's telemetry HUD reports live on-device STT/LLM/TTS/E2E.",
+    "runs_per_utterance": 3,
+    "models": {
+      "encoder": "vaani_stt_encoder.int8.onnx",
+      "tts": "vaani_tts_vits.fp16.onnx",
+      "decoder": "vaani_stt_decoder.int8.onnx",
+      "decoder_with_past": "vaani_stt_decoder_with_past.int8.onnx"
+    },
+    "g2p": {
+      "phoneme_coverage_pct": 100,
+      "phoneme_codepoints_total": 4186,
+      "phoneme_codepoints_dropped": 0,
+      "missing_symbols": {},
+      "espeak_parity": {
+        "reference": "espeak-ng hi (piper training phonemizer), host-side only",
+        "words": 449,
+        "exact_match_pct": 95.77,
+        "segmental_match_pct": 98.44,
+        "phoneme_error_rate_pct": 1.31,
+        "top_mismatches": [
+          {
+            "word": "थंडरस्टॉर्म",
+            "kotlin": "tʰəɳɖˌəɾəsʈˈɔrm",
+            "espeak": "tʰˌəɳɖəɾˈʌsʈɔrm"
+          },
+          {
+            "word": "कन्फर्म",
+            "kotlin": "kənpʰˈʌrm",
+            "espeak": "kˈʌnpʰərm"
+          },
+          {
+            "word": "लखनऊ",
+            "kotlin": "lˈʌkʰənˌəuː",
+            "espeak": "lˈʌkʰnˈəu"
+          },
+          {
+            "word": "थंडरस्टॉर्म्स",
+            "kotlin": "tʰəɳɖˌəɾəsʈˈɔrms",
+            "espeak": "tʰˌəɳɖəɾsʈˈɔrms"
+          },
+          {
+            "word": "अकाउंट",
+            "kotlin": "ˌʌkaːˈũʈ",
+            "espeak": "ˌʌkaːˈʊɳʈ"
+          },
+          {
+            "word": "लॉगआउट",
+            "kotlin": "lˌɔɡəˈaːʊʈ",
+            "espeak": "lˌɔɡˈaːʊʈ"
+          },
+          {
+            "word": "मुंबई",
+            "kotlin": "mˈũbəˌi",
+            "espeak": "mˈũbˌi"
+          }
+        ]
+      }
+    },
+    "mel_frontend": {
+      "filterbank": "vaani_mel_filters.bin (Slaney, 80x201)",
+      "cpp_vs_numpy_whisper_reference_max_abs_err": {
+        "mean": 9.2462e-06,
+        "median": 8.9407e-06,
+        "min": 4.8876e-06,
+        "max": 1.5259e-05
+      },
+      "fft_frames_fraction": {
+        "mean": 0.17456,
+        "median": 0.16483,
+        "min": 0.127,
+        "max": 0.26133
+      },
+      "cpp_ms": {
+        "mean": 9.8817,
+        "median": 9.1771,
+        "min": 5.8155,
+        "max": 21.635
+      },
+      "numpy_reference_ms": {
+        "mean": 69.127,
+        "median": 71.775,
+        "min": 45.949,
+        "max": 83.629
+      }
+    },
+    "resampler_22k05_to_16k": {
+      "snr_db_vs_scipy_resample_poly": {
+        "mean": 42.719,
+        "median": 42.61,
+        "min": 36.855,
+        "max": 47.699
+      }
+    },
+    "stt": {
+      "lid_two_way_accuracy_pct": 100.0,
+      "auto_language": {
+        "cer": {
+          "mean": 0.31533,
+          "median": 0.2778,
+          "min": 0.0,
+          "max": 0.8049
+        },
+        "wer": {
+          "mean": 0.49925,
+          "median": 0.52275,
+          "min": 0.0,
+          "max": 1.0
+        }
+      },
+      "forced_language": {
+        "cer": {
+          "mean": 0.31533,
+          "median": 0.2778,
+          "min": 0.0,
+          "max": 0.8049
+        },
+        "wer": {
+          "mean": 0.49925,
+          "median": 0.52275,
+          "min": 0.0,
+          "max": 1.0
+        }
+      },
+      "encoder_ms": {
+        "mean": 382.46,
+        "median": 380.22,
+        "min": 335.87,
+        "max": 455.88
+      },
+      "lid_step0_ms": {
+        "mean": 74.07,
+        "median": 73.014,
+        "min": 55.781,
+        "max": 105.45
+      },
+      "decoder": {
+        "cache_free_session1_ms": {
+          "mean": 730.84,
+          "median": 702.21,
+          "min": 397.74,
+          "max": 1086.0
+        },
+        "kv_cache_session2_ms": {
+          "mean": 278.99,
+          "median": 267.13,
+          "min": 217.18,
+          "max": 418.96
+        },
+        "cache_free_ms_per_token": {
+          "mean": 45.356,
+          "median": 45.592,
+          "min": 39.118,
+          "max": 53.546
+        },
+        "kv_cache_ms_per_token": {
+          "mean": 15.051,
+          "median": 14.723,
+          "min": 11.2,
+          "max": 22.019
+        },
+        "speedup_mean": 2.62,
+        "kv_vs_cache_free_identical_text_pct": 16.67,
+        "note": "both paths use identical masks (script calibration + Whisper non-speech + specials, suppress_blank, repetition guard); identical text => exact KV cache"
+      },
+      "stt_total_ms": {
+        "mean": 671.33,
+        "median": 660.69,
+        "min": 596.45,
+        "max": 819.15
+      },
+      "stt_rtf": {
+        "mean": 0.13448,
+        "median": 0.13683,
+        "min": 0.08422,
+        "max": 0.18827
+      }
+    },
+    "tts": {
+      "rtf": {
+        "mean": 0.11193,
+        "median": 0.11151,
+        "min": 0.098755,
+        "max": 0.13015
+      },
+      "first_sentence_ms": {
+        "mean": 579.71,
+        "median": 558.12,
+        "min": 423.37,
+        "max": 850.75
+      },
+      "raw_peak_amplitude": {
+        "mean": 0.82792,
+        "median": 0.83251,
+        "min": 0.76572,
+        "max": 0.86496
+      }
+    },
+    "utterances": [
+      {
+        "id": "P1",
+        "lang": "en",
+        "text": "What is the weather forecast for Bangalore tomorrow?",
+        "acoustic_devanagari": "व्हाट इज़ द वेदर फोरकास्ट फॉर बैंगलोर टुमारो?",
+        "audio_sec": 3.808,
+        "lid_detected": [
+          "en",
+          "en",
+          "en"
+        ],
+        "lid_p_hi": [
+          0.156,
+          0.11,
+          0.148
+        ],
+        "transcripts_auto": [
+          "But, is the weather forecast for Bangalore tomorrow?",
+          "What is the weather forecast for Bangalore tomorrow?",
+          "What is the weather forecast for Bangalore tomorrow?"
+        ],
+        "transcripts_forced": [
+          "But, is the weather forecast for Bangalore tomorrow?",
+          "What is the weather forecast for Bangalore tomorrow?",
+          "What is the weather forecast for Bangalore tomorrow?"
+        ],
+        "cer_forced": [
+          0.0682,
+          0.0,
+          0.0
+        ],
+        "wer_forced": [
+          0.125,
+          0.0,
+          0.0
+        ],
+        "cer_auto": [
+          0.0682,
+          0.0,
+          0.0
+        ],
+        "tts_rtf": 0.1195,
+        "stt_ms": 642.3,
+        "tokens": [
+          12,
+          11,
+          11
+        ]
+      },
+      {
+        "id": "P2",
+        "lang": "en",
+        "text": "Can you set a reminder for my meeting at 5 PM?",
+        "acoustic_devanagari": "कैन यू सेट अ रिमाइंडर फॉर माय मीटिंग एट फ़ाइव पी एम?",
+        "audio_sec": 4.772,
+        "lid_detected": [
+          "en",
+          "en",
+          "en"
+        ],
+        "lid_p_hi": [
+          0.019,
+          0.024,
+          0.021
+        ],
+        "transcripts_auto": [
+          "Can you say it? I remind you that for my meeting at 5 p.m.",
+          "Can you set a reminder for my meeting at 5pm?",
+          "Can you set a reminder for my meeting at 5 p.m?"
+        ],
+        "transcripts_forced": [
+          "Can you say it? I remind you that for my meeting at 5 p.m.",
+          "Can you set a reminder for my meeting at 5pm?",
+          "Can you set a reminder for my meeting at 5 p.m?"
+        ],
+        "cer_forced": [
+          0.3143,
+          0.0,
+          0.0
+        ],
+        "wer_forced": [
+          0.5455,
+          0.0,
+          0.1818
+        ],
+        "cer_auto": [
+          0.3143,
+          0.0,
+          0.0
+        ],
+        "tts_rtf": 0.114,
+        "stt_ms": 668.1,
+        "tokens": [
+          18,
+          12,
+          14
+        ]
+      },
+      {
+        "id": "P3",
+        "lang": "hi",
+        "text": "Mujhe kal subah 7 baje ka alarm set karna hai.",
+        "acoustic_devanagari": "मुझे कल सुबह सात बजे का अलार्म सेट करना है.",
+        "audio_sec": 3.796,
+        "lid_detected": [
+          "hi",
+          "hi",
+          "hi"
+        ],
+        "lid_p_hi": [
+          1.0,
+          0.998,
+          0.999
+        ],
+        "transcripts_auto": [
+          "Mohjee kaal subah, 7 bajyakal alarm sate karna hai",
+          "Mohjee Kalsuba, Saad Bhajee ka Alar Maseet karna hai",
+          "muji kalsaba, 7-7-8 karna hai"
+        ],
+        "transcripts_forced": [
+          "Mohjee kaal subah, 7 bajyakal alarm sate karna hai",
+          "Mohjee Kalsuba, Saad Bhajee ka Alar Maseet karna hai",
+          "muji kalsaba, 7-7-8 karna hai"
+        ],
+        "cer_forced": [
+          0.25,
+          0.3056,
+          0.5
+        ],
+        "wer_forced": [
+          0.5,
+          0.7,
+          0.7
+        ],
+        "cer_auto": [
+          0.25,
+          0.3056,
+          0.5
+        ],
+        "tts_rtf": 0.1208,
+        "stt_ms": 702.6,
+        "tokens": [
+          19,
+          22,
+          14
+        ]
+      },
+      {
+        "id": "P4",
+        "lang": "hi",
+        "text": "Aaj ka schedule kya hai, aur meri next meeting kab hai?",
+        "acoustic_devanagari": "आज का शेड्यूल क्या है, और मेरी नेक्स्ट मीटिंग कब है?",
+        "audio_sec": 3.959,
+        "lid_detected": [
+          "hi",
+          "hi",
+          "hi"
+        ],
+        "lid_p_hi": [
+          0.999,
+          1.0,
+          0.999
+        ],
+        "transcripts_auto": [
+          "Today's schedule is our next meeting.",
+          "Today's schedule is our next meeting.",
+          "Today's schedule is our next meeting."
+        ],
+        "transcripts_forced": [
+          "Today's schedule is our next meeting.",
+          "Today's schedule is our next meeting.",
+          "Today's schedule is our next meeting."
+        ],
+        "cer_forced": [
+          0.5349,
+          0.5349,
+          0.5349
+        ],
+        "wer_forced": [
+          0.7273,
+          0.7273,
+          0.7273
+        ],
+        "cer_auto": [
+          0.5349,
+          0.5349,
+          0.5349
+        ],
+        "tts_rtf": 0.1177,
+        "stt_ms": 612.4,
+        "tokens": [
+          8,
+          8,
+          8
+        ]
+      },
+      {
+        "id": "R1-en",
+        "lang": "en",
+        "text": "Tomorrow in Bangalore, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
+        "acoustic_devanagari": "टुमारो इन बैंगलोर, एक्सपेक्ट थंडरस्टॉर्म्स विद अ हाई ऑफ़ ट्वेंटी एट डिग्रीज़ ऐंड अ लो ऑफ़ ट्वेंटी डिग्रीज़.",
+        "audio_sec": 7.581,
+        "lid_detected": [
+          "en",
+          "en",
+          "en"
+        ],
+        "lid_p_hi": [
+          0.09,
+          0.149,
+          0.198
+        ],
+        "transcripts_auto": [
+          "Tomorrow in Bangalore, expect thunderstorms with a high of 20 degrees and a low of 20 degrees.",
+          "Tomorrow in Benloo, expect thunderstorms with a high of 20 degrees and a low of 20 degrees.",
+          "Tomorrow, in Benllo, expect thunderstorms with a high of 20 degrees and a low of 20 degrees."
+        ],
+        "transcripts_forced": [
+          "Tomorrow in Bangalore, expect thunderstorms with a high of 20 degrees and a low of 20 degrees.",
+          "Tomorrow in Benloo, expect thunderstorms with a high of 20 degrees and a low of 20 degrees.",
+          "Tomorrow, in Benllo, expect thunderstorms with a high of 20 degrees and a low of 20 degrees."
+        ],
+        "cer_forced": [
+          0.0132,
+          0.0789,
+          0.0789
+        ],
+        "wer_forced": [
+          0.0588,
+          0.1176,
+          0.1176
+        ],
+        "cer_auto": [
+          0.0132,
+          0.0789,
+          0.0789
+        ],
+        "tts_rtf": 0.1087,
+        "stt_ms": 712.7,
+        "tokens": [
+          22,
+          22,
+          22
+        ]
+      },
+      {
+        "id": "R1-hi",
+        "lang": "hi",
+        "text": "Kal Bangalore mein baarish ki sambhavna hai, temperature 20 se 28 degree tak rahega.",
+        "acoustic_devanagari": "कल बैंगलोर में बारिश की संभावना है, टेम्परेचर बीस से अट्ठाईस डिग्री तक रहेगा.",
+        "audio_sec": 6.2,
+        "lid_detected": [
+          "hi",
+          "hi",
+          "hi"
+        ],
+        "lid_p_hi": [
+          0.999,
+          0.997,
+          0.997
+        ],
+        "transcripts_auto": [
+          "Kalbang Lord has to be in the same temperature.",
+          "Kalding Lord has to be careful at the time.",
+          "Kalbang Lord has to be prepared for the next 10-15 hours."
+        ],
+        "transcripts_forced": [
+          "Kalbang Lord has to be in the same temperature.",
+          "Kalding Lord has to be careful at the time.",
+          "Kalbang Lord has to be prepared for the next 10-15 hours."
+        ],
+        "cer_forced": [
+          0.6377,
+          0.7391,
+          0.6957
+        ],
+        "wer_forced": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "cer_auto": [
+          0.6377,
+          0.7391,
+          0.6957
+        ],
+        "tts_rtf": 0.1119,
+        "stt_ms": 671.5,
+        "tokens": [
+          12,
+          11,
+          16
+        ]
+      },
+      {
+        "id": "R2-en",
+        "lang": "en",
+        "text": "Done, I have set a reminder for your meeting at 5 PM.",
+        "acoustic_devanagari": "डन, आई हैव सेट अ रिमाइंडर फॉर योर मीटिंग एट फ़ाइव पी एम",
+        "audio_sec": 5.085,
+        "lid_detected": [
+          "en",
+          "en",
+          "en"
+        ],
+        "lid_p_hi": [
+          0.039,
+          0.127,
+          0.204
+        ],
+        "transcripts_auto": [
+          "Done. I have set a reminder for your meeting at 5pm.",
+          "Done. I have set a reminder for your meeting at 5 p.m.",
+          "Done. I have set a reminder for your meeting at 5pm."
+        ],
+        "transcripts_forced": [
+          "Done. I have set a reminder for your meeting at 5pm.",
+          "Done. I have set a reminder for your meeting at 5 p.m.",
+          "Done. I have set a reminder for your meeting at 5pm."
+        ],
+        "cer_forced": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "wer_forced": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cer_auto": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tts_rtf": 0.1104,
+        "stt_ms": 686.6,
+        "tokens": [
+          14,
+          16,
+          14
+        ]
+      },
+      {
+        "id": "R2-hi",
+        "lang": "hi",
+        "text": "Theek hai, maine aapki meeting ke liye 5 PM ka reminder set kar diya hai.",
+        "acoustic_devanagari": "ठीक है, मैंने आपकी मीटिंग के लिए पाँच पी एम का रिमाइंडर सेट कर दिया है.",
+        "audio_sec": 5.619,
+        "lid_detected": [
+          "hi",
+          "hi",
+          "hi"
+        ],
+        "lid_p_hi": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "transcripts_auto": [
+          "I am going to say that you have made a mistake.",
+          "I am currently in the meeting of the meeting.",
+          "I am going to demonstrate your meeting."
+        ],
+        "transcripts_forced": [
+          "I am going to say that you have made a mistake.",
+          "I am currently in the meeting of the meeting.",
+          "I am going to demonstrate your meeting."
+        ],
+        "cer_forced": [
+          0.7895,
+          0.7719,
+          0.7895
+        ],
+        "wer_forced": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "cer_auto": [
+          0.7895,
+          0.7719,
+          0.7895
+        ],
+        "tts_rtf": 0.1066,
+        "stt_ms": 627.0,
+        "tokens": [
+          12,
+          10,
+          8
+        ]
+      },
+      {
+        "id": "R3-en",
+        "lang": "en",
+        "text": "Your alarm is set for 7 AM tomorrow morning.",
+        "acoustic_devanagari": "योर अलार्म इज़ सेट फॉर सेवन ए एम टुमारो मॉर्निंग.",
+        "audio_sec": 4.563,
+        "lid_detected": [
+          "en",
+          "en",
+          "en"
+        ],
+        "lid_p_hi": [
+          0.057,
+          0.092,
+          0.056
+        ],
+        "transcripts_auto": [
+          "You are alarm is set for 7 a and tomorrow morning.",
+          "You are alarm is set for 7 a and tomorrow morning.",
+          "You are alarm is set for 7, 8 and tomorrow morning."
+        ],
+        "transcripts_forced": [
+          "You are alarm is set for 7 a and tomorrow morning.",
+          "You are alarm is set for 7 a and tomorrow morning.",
+          "You are alarm is set for 7, 8 and tomorrow morning."
+        ],
+        "cer_forced": [
+          0.1429,
+          0.1429,
+          0.1429
+        ],
+        "wer_forced": [
+          0.4444,
+          0.4444,
+          0.4444
+        ],
+        "cer_auto": [
+          0.1429,
+          0.1429,
+          0.1429
+        ],
+        "tts_rtf": 0.1101,
+        "stt_ms": 647.2,
+        "tokens": [
+          12,
+          12,
+          13
+        ]
+      },
+      {
+        "id": "R3-hi",
+        "lang": "hi",
+        "text": "Aapka alarm kal subah 7 baje ke liye set ho gaya hai.",
+        "acoustic_devanagari": "आपका अलार्म कल सुबह सात बजे के लिए सेट हो गया है.",
+        "audio_sec": 4.261,
+        "lid_detected": [
+          "hi",
+          "hi",
+          "hi"
+        ],
+        "lid_p_hi": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "transcripts_auto": [
+          "AAP, Alarmakal Subha Sath Bajay.",
+          "A. now, your alarm is on sub 7.5.",
+          "AAPKA ALARM KAL SUBHA SAAT BHA JAKELA SEAT HONGAYA"
+        ],
+        "transcripts_forced": [
+          "AAP, Alarmakal Subha Sath Bajay.",
+          "A. now, your alarm is on sub 7.5.",
+          "AAPKA ALARM KAL SUBHA SAAT BHA JAKELA SEAT HONGAYA"
+        ],
+        "cer_forced": [
+          0.5122,
+          0.8049,
+          0.3659
+        ],
+        "wer_forced": [
+          1.0,
+          1.0,
+          0.75
+        ],
+        "cer_auto": [
+          0.5122,
+          0.8049,
+          0.3659
+        ],
+        "tts_rtf": 0.1111,
+        "stt_ms": 720.0,
+        "tokens": [
+          15,
+          13,
+          26
+        ]
+      },
+      {
+        "id": "R4-en",
+        "lang": "en",
+        "text": "Today you have three meetings, and your next one is the lab review at 4:30 PM.",
+        "acoustic_devanagari": "टुडे यू हैव थ्री मीटिंग्स, ऐंड योर नेक्स्ट वन इज़ द लैब रिव्यू एट फ़ोर थर्टी पी एम",
+        "audio_sec": 6.153,
+        "lid_detected": [
+          "en",
+          "en",
+          "en"
+        ],
+        "lid_p_hi": [
+          0.017,
+          0.065,
+          0.182
+        ],
+        "transcripts_auto": [
+          "Today you have three meetings and your next one is the Lab Review at 430pm.",
+          "Today you have three meetings and your next one is the Lab Review at 430pm.",
+          "Today you have three meetings and your next one is the Lab Review at 430p.m"
+        ],
+        "transcripts_forced": [
+          "Today you have three meetings and your next one is the Lab Review at 430pm.",
+          "Today you have three meetings and your next one is the Lab Review at 430pm.",
+          "Today you have three meetings and your next one is the Lab Review at 430p.m"
+        ],
+        "cer_forced": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "wer_forced": [
+          0.1176,
+          0.1176,
+          0.1765
+        ],
+        "cer_auto": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tts_rtf": 0.1072,
+        "stt_ms": 646.0,
+        "tokens": [
+          19,
+          19,
+          19
+        ]
+      },
+      {
+        "id": "R4-hi",
+        "lang": "hi",
+        "text": "Aaj aapki teen meetings hain, aur aapki next meeting 4:30 PM par lab review hai.",
+        "acoustic_devanagari": "आज आपकी तीन मीटिंग्स हैं, और आपकी नेक्स्ट मीटिंग साढ़े चार पी एम पर लैब रिव्यू है.",
+        "audio_sec": 6.745,
+        "lid_detected": [
+          "hi",
+          "hi",
+          "hi"
+        ],
+        "lid_p_hi": [
+          0.997,
+          0.998,
+          0.996
+        ],
+        "transcripts_auto": [
+          "Today your three meetings and your next meeting are 4 P.M.P.Labor Review.",
+          "Today, your three meetings are in your next meeting. I am PerlabriVu.com",
+          "Today, your three meetings and your next meeting, Sari Charpee, Amper Lab Review."
+        ],
+        "transcripts_forced": [
+          "Today your three meetings and your next meeting are 4 P.M.P.Labor Review.",
+          "Today, your three meetings are in your next meeting. I am PerlabriVu.com",
+          "Today, your three meetings and your next meeting, Sari Charpee, Amper Lab Review."
+        ],
+        "cer_forced": [
+          0.5079,
+          0.5238,
+          0.5714
+        ],
+        "wer_forced": [
+          0.75,
+          0.8125,
+          0.6875
+        ],
+        "cer_auto": [
+          0.5079,
+          0.5238,
+          0.5714
+        ],
+        "tts_rtf": 0.105,
+        "stt_ms": 719.5,
+        "tokens": [
+          20,
+          21,
+          20
+        ]
+      }
+    ]
+  },
+  "llm_benchmark": {
+    "generated_at": "2026-10-18T11:58:38+00:00",
+    "note": "Measured from the build host with the app's real system prompt and the noisy transcripts the on-device STT produced in the closed loop. gemini-2.5-flash (requested in the brief) answers HTTP 404 'no longer available to new users', so the app uses the 3.5 generation.",
+    "runs_per_prompt": 3,
+    "models": {
+      "gemini-3.5-flash-lite": {
+        "provider": "gemini",
+        "thinking": {
+          "thinkingLevel": "minimal"
+        },
+        "ttft_ms": {
+          "median": 795,
+          "min": 708,
+          "max": 1438
+        },
+        "total_ms_median": 862,
+        "calls_ok": 12,
+        "calls_failed": 0,
+        "errors": [],
+        "tool_tag_compliance": "5/6",
+        "sample_replies": {
+          "P1": "Tomorrow in Bengaluru, expect thunderstorms with a low of 19.7°C and a high of 28.4°C. There is an 84% chance of rain.",
+          "P2": "[ACTION:SET_REMINDER|17:00|Meeting]\nI have set a reminder for your meeting at 5:00 PM.",
+          "P3": "[ACTION:SET_ALARM|07:00|Morning Alarm]\nKal subah 7:00 AM ka alarm set ho gaya hai.",
+          "P4": "Aapki agli meeting 4:30 PM par IISc Computational Intelligence Lab Review hai. Lab pahunchne ka time ho raha hai."
+        }
+      },
+      "gemini-3.5-flash": {
+        "provider": "gemini",
+        "thinking": {
+          "thinkingBudget": 0
+        },
+        "ttft_ms": {
+          "median": 1200,
+          "min": 1200,
+          "max": 1200
+        },
+        "total_ms_median": 1351,
+        "calls_ok": 1,
+        "calls_failed": 11,
+        "errors": [
+          "HTTP 429"
+        ],
+        "tool_tag_compliance": "0/0",
+        "sample_replies": {
+          "P1": "Tomorrow in Bengaluru, expect thunderstorms with temperatures between 20°C and 28°C, and an 84% chance of rain."
+        }
+      },
+      "llama-3.3-70b-versatile": {
+        "skipped": "no groq key"
+      },
+      "llama-3.1-8b-instant": {
+        "skipped": "no groq key"
+      }
+    }
+  },
+  "ort_runtime_compat": {
+    "1.18.0": {
+      "onnxruntime": "1.18.0",
+      "models": {
+        "vaani_stt_decoder.int8.onnx": {
+          "ok": true,
+          "load_ms": 260,
+          "run_ms": 50.1,
+          "output0_shape": [
+            1,
+            1,
+            51865
+          ]
+        },
+        "vaani_stt_decoder_with_past.int8.onnx": {
+          "ok": true,
+          "load_ms": 186,
+          "run_ms": 12.0,
+          "output0_shape": [
+            1,
+            1,
+            51865
+          ]
+        },
+        "vaani_stt_encoder.int8.onnx": {
+          "ok": true,
+          "load_ms": 74,
+          "run_ms": 323.3,
+          "output0_shape": [
+            1,
+            1500,
+            384
+          ]
+        },
+        "vaani_tts_vits.fp16.onnx": {
+          "ok": true,
+          "load_ms": 1315,
+          "run_ms": 75.7,
+          "output0_shape": [
+            1,
+            1,
+            1,
+            15104
+          ]
+        },
+        "vaani_vad.onnx": {
+          "ok": true,
+          "load_ms": 73,
+          "run_ms": 4.0,
+          "output0_shape": [
+            1,
+            1
+          ]
+        }
+      },
+      "all_ok": true
+    }
+  },
+  "session2_findings": {
+    "host": "Intel Xeon Platinum 8259CL (4 vCPU), onnxruntime 1.31 (and 1.18.0 where noted); measured, not projected",
+    "1_runtime_blocker_fixed": {
+      "finding": "Session-1 INT8 encoder and INT8 VITS use ConvInteger with int8 weights; onnxruntime 1.18.0-1.22.0 (the APK ships 1.18.0) raise NOT_IMPLEMENTED at load, i.e. STT and TTS would have failed on the phone.",
+      "fix": "encoder re-quantized MatMul-only (convs fp32); VITS shipped fp16-stored/fp32-computed; every graph gated by speech_lab/check_ort_compat.py under onnxruntime==1.18.0 (see ort_runtime_compat)"
+    },
+    "2_tts_int8_vs_fp16_storage": {
+      "rtf_ort_1_31": {
+        "int8_convinteger": 0.274,
+        "fp32": 0.067,
+        "fp16_storage": 0.066
+      },
+      "rtf_ort_1_18": {
+        "int8_convinteger": "load failure",
+        "fp32": 0.086,
+        "fp16_storage": 0.091
+      },
+      "fp16_storage_vs_fp32_deterministic_snr_db": 29.7,
+      "size_mb": {
+        "int8": 18.3,
+        "fp32": 63.0,
+        "fp16_storage": 31.7
+      },
+      "decision": "ship vaani_tts_vits.fp16.onnx (3.2x faster than INT8, loads on ORT 1.18)"
+    },
+    "3_tied_embedding_logits_fusion": {
+      "finding": "community INT8 decoders compute logits as MatMul(h, DequantizeLinear(Transpose(W_q))) and ORT never constant-folds DequantizeLinear: every step de-quantised the 51865x384 table (16.7 of 28.7 ms/step)",
+      "fix": "prepare_models.fuse_tied_logits_int8 -> com.microsoft.DynamicQuantizeMatMul on one shared transposed table",
+      "decoder_with_past_step_ms": {
+        "ort_1_31": [
+          29.07,
+          9.52
+        ],
+        "ort_1_18": [
+          21.76,
+          5.72
+        ]
+      },
+      "decoder_first_step_ms": {
+        "ort_1_31": [
+          78.39,
+          46.03
+        ],
+        "ort_1_18": [
+          51.48,
+          28.23
+        ]
+      },
+      "argmax_agreement_random_inputs": "148/151"
+    },
+    "4_kv_cache_exactness": {
+      "fp32_decoders_kv_vs_cache_free_identical_tokens": "12/12",
+      "int8_decoders": "2/12 identical: dynamic per-tensor activation scales differ between a full-prefix pass and a 1-token pass (inherent to dynamic quantization, not a cache bug)"
+    },
+    "5_stt_precision_study_cer_forced_language_3_runs": {
+      "int8_enc+int8_dec": {
+        "hi": 0.613,
+        "en": 0.037
+      },
+      "fp32_enc+int8_dec": {
+        "hi": 0.581,
+        "en": 0.058
+      },
+      "int8_enc+fp32_dec": {
+        "hi": 0.611,
+        "en": 0.041
+      },
+      "fp32_enc+fp32_dec": {
+        "hi": 0.538,
+        "en": 0.042
+      },
+      "fp16w_enc+fp16w_dec": {
+        "hi": 0.538,
+        "en": 0.042
+      },
+      "decision": "ship INT8 enc+dec for latency; fp16-stored encoder (16.5 MB) is the first knob for Hinglish accuracy"
+    },
+    "6_rejected_hindi_decoding_tricks": {
+      "suppress_latin_tokens_in_hi_mode": {
+        "cer_hi": 0.98,
+        "note": "Whisper-tiny degenerates into CJK fragments / digit loops"
+      },
+      "devanagari_domain_initial_prompt": {
+        "cer_hi": 1.077,
+        "cer_en": 0.794
+      }
+    },
+    "7_mel_filterbank_vs_openai_mel_filters_npz_max_abs_err": 1.86e-09,
+    "8_gemini_model_retirement": "gemini-2.5-flash -> HTTP 404 'no longer available to new users'; app uses gemini-3.5-flash-lite (thinkingLevel=minimal) with automatic 404/429/503 fallback"
   }
 }

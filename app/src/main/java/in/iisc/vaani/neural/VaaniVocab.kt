@@ -10,9 +10,10 @@ import org.json.JSONObject
  *   - the id -> byte-level-BPE token strings (for detokenisation),
  *   - the GPT-2 byte<->unicode decoder (rebuilt here, not stored),
  *   - the special-token ids (SOT / EOT / transcribe / notimestamps / ...),
- *   - the per-language SOT ids, and
- *   - the suppressed-token-id set used for **logit-level script masking** so the
- *     decoder can never drift into Perso-Arabic/Urdu, Cyrillic or CJK output.
+ *   - the per-language SOT ids (step-0 language identification reads `en`/`hi`),
+ *   - the **logit mask** for text steps: suppressed-script tokens (Perso-Arabic/Urdu,
+ *     Cyrillic, CJK, ...), Whisper's non-speech symbols (♪, [, ( ...), and every
+ *     special/timestamp token except EOT; plus `suppress_blank` for the first step.
  */
 class VaaniVocab private constructor(
     val vocabSize: Int,
@@ -23,18 +24,32 @@ class VaaniVocab private constructor(
     val translate: Int,
     val noTimestamps: Int,
     val timestampBegin: Int,
+    val blank: Int,
     val languageTokens: Map<String, Int>,
-    private val suppressed: BooleanArray,
+    private val scriptSuppressed: BooleanArray,
+    private val nonSpeech: BooleanArray,
 ) {
-    /** True if token [id] must be masked out (suppressed script or timestamp). */
-    fun isSuppressed(id: Int): Boolean = id in suppressed.indices && suppressed[id]
+    /** True if token [id] is a suppressed-script token (Session-1 calibration). */
+    fun isSuppressed(id: Int): Boolean = id in scriptSuppressed.indices && scriptSuppressed[id]
+
+    /** Mask for every text step: true = logit forced to -inf. */
+    val textMask: BooleanArray = BooleanArray(vocabSize) { id ->
+        (id in scriptSuppressed.indices && scriptSuppressed[id]) ||
+            (id in nonSpeech.indices && nonSpeech[id]) || id > eot
+    }
+
+    /** First text step additionally suppresses EOT and the bare space (Whisper suppress_blank). */
+    val firstStepMask: BooleanArray = textMask.copyOf().also {
+        if (eot in it.indices) it[eot] = true
+        if (blank in it.indices) it[blank] = true
+    }
 
     fun languageToken(language: String): Int =
         languageTokens[language.lowercase()] ?: languageTokens["hi"] ?: sot + 1
 
     /**
      * Detokenises text-range ids (< [eot]) from byte-level BPE back to UTF-8.
-     * Special tokens are skipped.
+     * Special tokens are skipped; a dangling partial UTF-8 sequence is dropped.
      */
     fun decode(ids: List<Int>): String {
         val sb = StringBuilder()
@@ -44,7 +59,7 @@ class VaaniVocab private constructor(
         }
         val bytes = ArrayList<Byte>(sb.length)
         for (ch in sb) BYTE_DECODER[ch]?.let { bytes.add(it.toByte()) }
-        return String(bytes.toByteArray(), Charsets.UTF_8)
+        return String(bytes.toByteArray(), Charsets.UTF_8).replace("�", "").trim()
     }
 
     companion object {
@@ -85,15 +100,22 @@ class VaaniVocab private constructor(
                 for (k in lt.keys()) langs[k] = lt.getInt(k)
             }
 
-            val suppressed = BooleanArray(size)
-            root.optJSONArray("suppressed_token_ids")?.let { arr ->
-                for (i in 0 until arr.length()) {
-                    val id = arr.getInt(i)
-                    if (id in 0 until size) suppressed[id] = true
+            fun idSet(key: String): BooleanArray {
+                val mask = BooleanArray(size)
+                root.optJSONArray(key)?.let { arr ->
+                    for (i in 0 until arr.length()) {
+                        val id = arr.getInt(i)
+                        if (id in 0 until size) mask[id] = true
+                    }
                 }
+                return mask
             }
 
-            return VaaniVocab(size, tokens, sot, eot, transcribe, translate, noTs, tsBegin, langs, suppressed)
+            return VaaniVocab(
+                size, tokens, sot, eot, transcribe, translate, noTs, tsBegin,
+                root.optInt("blank_token_id", 220), langs,
+                idSet("suppressed_token_ids"), idSet("non_speech_token_ids"),
+            )
         }
     }
 }

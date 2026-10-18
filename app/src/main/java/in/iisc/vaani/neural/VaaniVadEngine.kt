@@ -13,16 +13,20 @@ import java.nio.LongBuffer
  *
  * The recurrent state tensors are carried across calls (this is a stateful
  * streaming model), and a trailing-silence auto-endpointer fires after
- * [endpointSilenceMs] of continuous non-speech once speech has started.
+ * [endpointSilenceMs] of continuous non-speech once speech has started (500 ms by
+ * default: long enough not to cut "Aaj ka schedule kya hai, ... aur" at the comma pause).
  *
  * Supports both the v5 single-`state` layout and the v4 `h`/`c` layout; the
- * active layout is detected from the model's input names.
+ * active layout is detected from the model's input names. For v5 each call is fed
+ * the last 64 samples of the previous call + the new 512-sample chunk (576 total),
+ * exactly like Silero's reference wrapper: measured on speech + noise this lowers the
+ * silence false-alarm probability from ~0.25 to ~0.05 (speech_lab notes, Session 2).
  */
 class VaaniVadEngine(
-    modelBytes: ByteArray,
+    modelPath: String,
     private val sampleRate: Int = 16_000,
     private val speechThreshold: Float = 0.5f,
-    private val endpointSilenceMs: Int = 320,
+    var endpointSilenceMs: Int = 500,
 ) : AutoCloseable {
 
     private val env: OrtEnvironment = OrtEnvironment.getEnvironment()
@@ -32,6 +36,7 @@ class VaaniVadEngine(
 
     // Recurrent state (v5: [2,1,128]=256 ; v4: h,c each [2,1,64]=128).
     private var state = FloatArray(2 * 1 * 128)
+    private val context = FloatArray(CONTEXT_SAMPLES)
     private var hState = FloatArray(2 * 1 * 64)
     private var cState = FloatArray(2 * 1 * 64)
 
@@ -39,19 +44,26 @@ class VaaniVadEngine(
     private var speechStarted = false
     private var trailingSilenceMs = 0
 
+    /** True once speech has been detected in the current utterance. */
+    val inSpeech: Boolean get() = speechStarted
+
+    /** Last P(speech) produced by [process]. */
+    @Volatile var lastProbability: Float = 0f
+        private set
+
     init {
         val opts = OrtSession.SessionOptions().apply {
             setIntraOpNumThreads(1)
             setExecutionMode(OrtSession.SessionOptions.ExecutionMode.SEQUENTIAL)
         }
-        session = env.createSession(modelBytes, opts)
+        session = env.createSession(modelPath, opts)
         inputNames = session.inputNames
         usesCombinedState = inputNames.contains("state")
     }
 
     /** Resets recurrent state and endpointer; call before each new utterance. */
     fun reset() {
-        state.fill(0f); hState.fill(0f); cState.fill(0f)
+        state.fill(0f); hState.fill(0f); cState.fill(0f); context.fill(0f)
         speechStarted = false
         trailingSilenceMs = 0
     }
@@ -61,10 +73,15 @@ class VaaniVadEngine(
         val inputs = HashMap<String, OnnxTensor>()
         val toClose = ArrayList<AutoCloseable>()
         try {
+            val x = if (usesCombinedState) FloatArray(CONTEXT_SAMPLES + chunk.size).also {
+                context.copyInto(it, 0)
+                chunk.copyInto(it, CONTEXT_SAMPLES)
+            } else chunk
             val input = OnnxTensor.createTensor(
-                env, FloatBuffer.wrap(chunk), longArrayOf(1, chunk.size.toLong()),
+                env, FloatBuffer.wrap(x), longArrayOf(1, x.size.toLong()),
             )
             inputs["input"] = input; toClose.add(input)
+            if (usesCombinedState) x.copyInto(context, 0, x.size - CONTEXT_SAMPLES, x.size)
 
             val sr = OnnxTensor.createTensor(
                 env, LongBuffer.wrap(longArrayOf(sampleRate.toLong())), longArrayOf(),
@@ -85,6 +102,7 @@ class VaaniVadEngine(
             session.run(inputs).use { result ->
                 val prob = firstFloat(result.get(0))
                 updateState(result)
+                lastProbability = prob
                 return prob
             }
         } finally {
@@ -152,5 +170,8 @@ class VaaniVadEngine(
     companion object {
         /** 32 ms @ 16 kHz. */
         const val CHUNK_SAMPLES = 512
+
+        /** Silero v5 context carried between calls at 16 kHz. */
+        const val CONTEXT_SAMPLES = 64
     }
 }

@@ -4,17 +4,24 @@ IISc Computational Intelligence Lab
 ================================================================================
 ORIGINAL WORK (© VaaniEdge / IISc CI Lab)
 ================================================================================
-All engine, DSP, and codec code under the Kotlin package `in.iisc.vaani.*` and
-the native library `app/src/main/cpp/vaani_dsp_neon.cpp`, plus the host-side
+All engine, DSP, codec, agent and UI code under the Kotlin package `in.iisc.vaani.*`
+and the native library `app/src/main/cpp/vaani_dsp_neon.cpp`, plus the host-side
 pipeline in `speech_lab/`, is original first-principles work:
 
   * libvaani_dsp_neon.so   — custom C++17 ARM64 NEON DSP (pre-emphasis, RMS,
-                             Whisper-exact log-Mel spectrogram, float->PCM16).
-  * in.iisc.vaani.neural.* — ONNX Runtime inference engines (VAD, Whisper STT
-                             with logit-level script masking, VITS TTS) written
-                             directly against the ai.onnxruntime API.
-  * in.iisc.vaani.codec.*  — Hinglish Codec + Indic Grapheme-to-Phoneme engine.
-  * in.iisc.vaani.audio.*  — capture / endpointing / streaming-TTS orchestration.
+                             Whisper-exact log-Mel spectrogram with a planned
+                             mixed-radix FFT, Kaiser-sinc resampler, float->PCM16).
+  * in.iisc.vaani.neural.* — ONNX Runtime inference engines (Silero VAD, Whisper STT
+                             with step-0 EN/HI language ID, KV-cache decoding and
+                             logit-level script masking, VITS TTS) written directly
+                             against the ai.onnxruntime API.
+  * in.iisc.vaani.codec.*  — Hinglish Codec, Indic G2P (espeak-compatible rules
+                             derived and scored in speech_lab/verify_closed_loop.py),
+                             ARPAbet->Devanagari converter.
+  * in.iisc.vaani.llm.*    — streaming Groq/Gemini SSE client, clause-level TTS
+                             pipelining, tool-tag parsing.
+  * in.iisc.vaani.tools.*, agent.*, audio.*, runtime.*, ui.* — tools, orchestration,
+                             capture/playback and the Compose UI.
 
 ================================================================================
 THIRD-PARTY COMPONENTS (used as dependencies, with thanks)
@@ -28,16 +35,41 @@ metadata (`producer_name`, `doc_string`) records the same provenance.
    Provides libonnxruntime.so and the ai.onnxruntime.* API.
 
 2. OpenAI Whisper (tiny, multilingual) — © OpenAI.         MIT License.
-   STT acoustic model. ONNX export from the Hugging Face ONNX community;
-   dynamically re-quantized to INT8 and repackaged as vaani_stt_*.int8.onnx.
+   STT acoustic model. ONNX export from the Hugging Face ONNX community
+   (onnx-community/whisper-tiny): encoder re-quantized MatMul-only to INT8,
+   decoder + decoder_with_past INT8 with a rewritten tied-embedding output
+   projection; repackaged as vaani_stt_*.int8.onnx.
 
 3. Silero VAD                    — © Silero Team.          MIT License.
    Voice-activity model, repackaged as vaani_vad.onnx.
 
-4. Piper / VITS (hi_IN voice)    — © rhasspy / Piper.      See upstream model card.
-   Neural TTS voice (rhasspy/piper-voices). Re-quantized to INT8 and repackaged
-   as vaani_tts_vits.int8.onnx; its config as vaani_tts_config.json.
+4. Piper / VITS (hi_IN "rohan" voice) — © rhasspy / Piper. See upstream model card.
+   Neural TTS voice (rhasspy/piper-voices). Weights stored fp16 (computed fp32)
+   and repackaged as vaani_tts_vits.fp16.onnx; its config as vaani_tts_config.json.
+
+5. CMU Pronouncing Dictionary    — © 1993-2015 Carnegie Mellon University.
+   BSD-style licence; the full licence text is reproduced in the header of
+   app/src/main/assets/lexicon/vaani_en_cmudict.txt (first pronunciation of each
+   [a-z'] word), used for English -> Devanagari on device.
+
+6. IBM Plex Sans / IBM Plex Sans Devanagari — © IBM Corp.  SIL Open Font License 1.1.
+   UI typefaces in app/src/main/res/font/; licence: third_party/IBM-Plex-OFL-1.1.txt.
+
+7. OkHttp 4.12.0                 — © Square, Inc.          Apache License 2.0.
+8. AndroidX / Jetpack Compose, Kotlin, kotlinx.coroutines — © Google / JetBrains.
+                                                           Apache License 2.0.
+
+Services (network, not redistributed):
+9. Open-Meteo forecast API       — weather data by Open-Meteo.com, CC BY 4.0
+   (attribution shown on the in-app weather card).
+10. Groq API / Google Gemini API — used under the providers' terms with the
+   user's own API keys (never stored in this repository).
+
+Host-side measurement tools only (NOT linked into or shipped with the app):
+11. espeak-ng (GPL-3.0), via the `espeakng-loader` Python package, is used by
+   speech_lab/verify_closed_loop.py purely as a reference to score the original
+   Kotlin G2P against the phonemizer the Piper voice was trained with.
 
 The Whisper Slaney Mel-filterbank matrix in vaani_mel_filters.bin is computed
-from first principles (see speech_lab/prepare_models.py) and matches the
-librosa/Whisper filterbank definition.
+from first principles (see speech_lab/prepare_models.py) and matches OpenAI's
+reference mel_filters.npz to 1.9e-9 (speech_lab/evaluation_metrics.json).

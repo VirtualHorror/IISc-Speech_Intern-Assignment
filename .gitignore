@@ -45,4 +45,11 @@ speech_lab/__pycache__/
 # Keep the Gradle wrapper jar tracked (do NOT ignore gradle/wrapper/*.jar)
 !gradle/wrapper/gradle-wrapper.jar
 
+# Agent session handoff notes (local working documents, never committed)
+HANDOFF*.md
+
+# Partial/temporary outputs of the speech_lab scripts
+speech_lab/*.tmp
+*.pre.onnx
+
 # NOTE: app/src/main/assets/models/*.onnx and *.bin ARE intentionally tracked.

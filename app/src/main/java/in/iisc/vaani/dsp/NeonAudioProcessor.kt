@@ -69,6 +69,9 @@ object NeonAudioProcessor {
     /** Saturating, round-to-nearest float32 [-1,1] -> PCM16 conversion. */
     external fun floatToPcm16(input: FloatArray): ShortArray
 
+    /** Band-limited Kaiser-windowed-sinc resampler (e.g. 22.05 kHz VITS -> 16 kHz Whisper). */
+    external fun resampleSinc(input: FloatArray, inRate: Int, outRate: Int): FloatArray
+
     // --- Convenience wrappers (Whisper defaults) -----------------------------
 
     fun preEmphasize(pcm: FloatArray): FloatArray {
@@ -80,6 +83,8 @@ object NeonAudioProcessor {
      * Computes the `[1, 80, 3000]` log-Mel feature expected by
      * `vaani_stt_encoder.int8.onnx`. `melFilters` is the 80x201 Slaney matrix
      * loaded from `vaani_mel_filters.bin` (row-major, little-endian float32).
+     * Verified against a numpy transcription of whisper.audio (max |err| ~1e-5) by
+     * speech_lab/verify_closed_loop.py; all-zero padding frames skip the FFT exactly.
      */
     fun logMel(pcm: FloatArray, melFilters: FloatArray): FloatArray {
         ensureLoaded()
@@ -94,5 +99,16 @@ object NeonAudioProcessor {
     fun toPcm16(samples: FloatArray): ShortArray {
         ensureLoaded()
         return floatToPcm16(samples)
+    }
+
+    fun rms(samples: FloatArray): Float {
+        ensureLoaded()
+        return rmsEnergy(samples)
+    }
+
+    fun resample(samples: FloatArray, inRate: Int, outRate: Int): FloatArray {
+        if (inRate == outRate) return samples
+        ensureLoaded()
+        return resampleSinc(samples, inRate, outRate)
     }
 }

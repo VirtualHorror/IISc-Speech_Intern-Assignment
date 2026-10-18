@@ -1,0 +1,18 @@
+{
+  "description": "VaaniEdge closed-loop corpus: the 4 official IISc evaluation prompts plus representative assistant responses in English and Hinglish. Consumed by app/src/test/.../ClosedLoopFixtureTest.kt (exact Kotlin codec + G2P) and speech_lab/verify_closed_loop.py (VITS -> Whisper round trip).",
+  "utterances": [
+    {"id": "P1", "kind": "prompt", "lang": "en", "text": "What is the weather forecast for Bangalore tomorrow?"},
+    {"id": "P2", "kind": "prompt", "lang": "en", "text": "Can you set a reminder for my meeting at 5 PM?"},
+    {"id": "P3", "kind": "prompt", "lang": "hi", "text": "Mujhe kal subah 7 baje ka alarm set karna hai."},
+    {"id": "P4", "kind": "prompt", "lang": "hi", "text": "Aaj ka schedule kya hai, aur meri next meeting kab hai?"},
+
+    {"id": "R1-en", "kind": "response", "lang": "en", "text": "Tomorrow in Bangalore, expect thunderstorms with a high of 28 degrees and a low of 20 degrees."},
+    {"id": "R1-hi", "kind": "response", "lang": "hi", "text": "Kal Bangalore mein baarish ki sambhavna hai, temperature 20 se 28 degree tak rahega."},
+    {"id": "R2-en", "kind": "response", "lang": "en", "text": "Done, I have set a reminder for your meeting at 5 PM."},
+    {"id": "R2-hi", "kind": "response", "lang": "hi", "text": "Theek hai, maine aapki meeting ke liye 5 PM ka reminder set kar diya hai."},
+    {"id": "R3-en", "kind": "response", "lang": "en", "text": "Your alarm is set for 7 AM tomorrow morning."},
+    {"id": "R3-hi", "kind": "response", "lang": "hi", "text": "Aapka alarm kal subah 7 baje ke liye set ho gaya hai."},
+    {"id": "R4-en", "kind": "response", "lang": "en", "text": "Today you have three meetings, and your next one is the lab review at 4:30 PM."},
+    {"id": "R4-hi", "kind": "response", "lang": "hi", "text": "Aaj aapki teen meetings hain, aur aapki next meeting 4:30 PM par lab review hai."}
+  ]
+}
