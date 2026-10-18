@@ -35,8 +35,8 @@ android {
         applicationId = "in.iisc.vaani"
         minSdk = 28
         targetSdk = 34
-        versionCode = 4
-        versionName = "3.1.0"
+        versionCode = 5
+        versionName = "3.2.0"
         manifestPlaceholders["appLabel"] = "VaaniEdge"
 
         buildConfigField("String", "DEFAULT_GROQ_API_KEY", secret("GROQ_API_KEY"))

@@ -46,8 +46,8 @@ object HinglishCodec {
     // =========================================================================
     //  Lexicon 1: Devanagari -> Roman (STT normalisation).
     //  Loanwords are restored to their English spelling; native Hindi words map
-    //  to conventional Roman Hinglish. Casing is intentional (proper nouns and
-    //  the sentence-opening pronouns the IISc prompts use are capitalised).
+    //  to conventional Roman Hinglish. Proper nouns are capitalised here; sentence
+    //  starts are capitalised by [normalizeSttTranscript] (Devanagari has no case).
     // =========================================================================
     val DEV_TO_ROMAN: Map<String, String> = buildMap {
         // --- English loanwords (assistant / scheduling / weather domain) ------
@@ -92,7 +92,7 @@ object HinglishCodec {
         put("अक्टूबर", "October"); put("नवंबर", "November"); put("दिसंबर", "December")
         put("सुबह", "subah"); put("शाम", "shaam"); put("दोपहर", "dopahar"); put("रात", "raat")
         put("बजे", "baje"); put("मिनट", "minute"); put("घंटा", "ghanta"); put("घंटे", "ghante")
-        put("सेकंड", "second"); put("आज", "Aaj"); put("कल", "kal"); put("परसों", "parson")
+        put("सेकंड", "second"); put("आज", "aaj"); put("कल", "kal"); put("परसों", "parson")
         put("अभी", "abhi"); put("बाद", "baad"); put("पहले", "pehle"); put("रोज", "roz")
 
         // --- Places (Indian cities; proper-noun casing) ----------------------
@@ -102,7 +102,7 @@ object HinglishCodec {
         put("लखनऊ", "Lucknow"); put("भारत", "Bharat"); put("इंडिया", "India")
 
         // --- Pronouns / question words / function words ----------------------
-        put("मैं", "main"); put("मुझे", "Mujhe"); put("मेरा", "mera"); put("मेरी", "meri")
+        put("मैं", "main"); put("मुझे", "mujhe"); put("मेरा", "mera"); put("मेरी", "meri")
         put("मेरे", "mere"); put("तुम", "tum"); put("तुम्हें", "tumhe"); put("आप", "aap")
         put("आपको", "aapko"); put("हम", "hum"); put("वह", "wah"); put("यह", "yah")
         put("क्या", "kya"); put("कब", "kab"); put("कहाँ", "kahan"); put("कौन", "kaun")
@@ -240,6 +240,8 @@ object HinglishCodec {
         put("bajkar", "बजकर"); put("aadha", "आधा"); put("pune", "पुणे"); put("dilli", "दिल्ली")
         put("unka", "उनका"); put("unki", "उनकी"); put("unke", "उनके"); put("inka", "इनका")
         put("sath", "साथ"); put("se", "से"); put("tha", "था"); put("rahenge", "रहेंगे")
+        put("kaisa", "कैसा"); put("kaisi", "कैसी"); put("laga", "लगा"); put("lagana", "लगाना"); put("savere", "सवेरे")
+        put("bajke", "बजके"); put("uthana", "उठाना"); put("jagana", "जगाना"); put("hain", "हैं")
     }
 
     /** Hinglish markers used by [detectLanguage] (unambiguous, never English words). */
@@ -477,13 +479,15 @@ object HinglishCodec {
         if (rawText.isBlank()) return ""
         val letters = rawText.count { it.isLetter() && it.code < 0x0900 }
         val shouting = letters >= 6 && rawText.count { it.isUpperCase() } >= letters * 0.7
+        val raw = sttTokens(rawText).map { normalizeDigits(it) }.toMutableList()
+        devanagariContext(raw)
         val words = ArrayList<String>()
-        for (raw in sttTokens(rawText)) {
-            if (raw in PUNCT) { words.add(if (raw == "।" || raw == "॥") "." else raw); continue }
-            val tok = normalizeDigits(raw)
+        for (tok in raw) {
+            if (tok in PUNCT) { words.add(if (tok == "।" || tok == "॥") "." else tok); continue }
             words.add(when {
                 !isDevanagari(tok) -> if (shouting) tok.lowercase() else tok
-                else -> DEV_TO_ROMAN[tok] ?: hunterianTransliterate(tok)
+                // Devanagari has no case: sentence-initial words are capitalised like Whisper's Roman output
+                else -> devanagariToRoman(tok).let { r -> if (isSentenceStart(words)) r.replaceFirstChar { it.uppercaseChar() } else r }
             })
         }
         val merged = mergeSplitWords(words)
@@ -693,6 +697,134 @@ object HinglishCodec {
      */
     fun cleanAsrText(text: String): String =
         RE_WORD_STUTTER.replace(RE_NUM_STUTTER.replace(text, "$1"), "$1").replace(Regex("""\s{2,}"""), " ").trim()
+
+    // =========================================================================
+    //  Devanagari -> Roman Hinglish (STT output of the Hindi specialist).
+    // =========================================================================
+
+    /** Gold Devanagari -> Roman spellings: [DEV_TO_ROMAN], then the Hinglish lexicon reversed. */
+    private val DEV_ROMAN_ALL: Map<String, String> by lazy {
+        val m = LinkedHashMap(DEV_TO_ROMAN)
+        for ((roman, dev) in HINGLISH_TO_DEV) if (' ' !in dev) m.putIfAbsent(dev, roman)
+        m
+    }
+
+    private val DEV_NUMBERS: Map<String, Int> by lazy {
+        HI_NUM.withIndex().associate { (i, w) -> w to i } +
+            mapOf("पांच" to 5, "छः" to 6, "छे" to 6, "अट्ठाइस" to 28, "उन्नतीस" to 29)
+    }
+    private val DEV_UNITS = setOf(
+        "बजे", "बजकर", "बजके", "डिग्री", "डिग्रीज़", "प्रतिशत", "परसेंट", "मिनट", "मिनिट", "घंटे", "घंटा", "सेल्सियस", "AM", "PM",
+    )
+    private val DEV_FRACTIONS = mapOf("साढ़े" to 30, "साढे" to 30, "साड़े" to 30, "सवा" to 15, "पौने" to -15)
+
+    /**
+     * Number words become digits only next to a unit — "बीस से अट्ठाईस डिग्री" -> "20 से 28
+     * डिग्री", "साढ़े चार पी एम" -> "4:30 PM", "सात बजे" -> "7 बजे" — while counts stay words
+     * ("तीन मीटिंग्स" -> "teen meetings"). Spelled letters "पी एम" / "ए एम" become PM / AM.
+     */
+    private fun devanagariContext(t: MutableList<String>) {
+        var i = 0
+        while (i < t.size) {
+            val next = t.getOrNull(i + 1)
+            when {
+                t[i] == "पीएम" -> t[i] = "PM"
+                t[i] == "एएम" -> t[i] = "AM"
+                t[i] == "पी" && next == "एम" -> { t[i] = "PM"; t.removeAt(i + 1) }
+                t[i] == "ए" && next == "एम" -> { t[i] = "AM"; t.removeAt(i + 1) }
+            }
+            i++
+        }
+        fun num(k: Int): Int? = t.getOrNull(k)?.let { DEV_NUMBERS[it] ?: it.toIntOrNull() }
+        fun unit(k: Int): Boolean = t.getOrNull(k) in DEV_UNITS
+        i = 0
+        while (i < t.size) {
+            val frac = DEV_FRACTIONS[t[i]]
+            val n = num(i + 1)
+            if (frac != null && n != null && unit(i + 2)) {
+                val (h, m) = if (frac < 0) (if (n == 1) 12 else n - 1) to 45 else n to frac
+                t[i] = "$h:" + m.toString().padStart(2, '0')
+                t.removeAt(i + 1)
+            } else {
+                val v = DEV_NUMBERS[t[i]]
+                if (v != null && (unit(i + 1) || (t.getOrNull(i + 1) == "से" && num(i + 2) != null && unit(i + 3)))) {
+                    t[i] = v.toString()
+                }
+            }
+            i++
+        }
+    }
+
+    /** One Devanagari word: gold spelling, else a split into known words, else the G2P romaniser. */
+    private fun devanagariToRoman(w: String): String =
+        DEV_ROMAN_ALL[w] ?: devanagariCompound(w) ?: romanizeDevanagari(w)
+
+    /** Fused words the model wrote as one token ("नेक्स्टमीटिंग" -> "next meeting"): 2-3 known words. */
+    private fun devanagariCompound(w: String): String? {
+        val n = w.length
+        if (n < 6) return null
+        val parts = IntArray(n + 1) { Int.MAX_VALUE }
+        val back = IntArray(n + 1) { -1 }
+        parts[0] = 0
+        for (i in 2..n) for (j in maxOf(0, i - 16)..i - 2) {
+            if (parts[j] == Int.MAX_VALUE || parts[j] >= 3) continue
+            if (w.substring(j, i) in DEV_ROMAN_ALL && parts[j] + 1 < parts[i]) { parts[i] = parts[j] + 1; back[i] = j }
+        }
+        if (parts[n] == Int.MAX_VALUE || parts[n] < 2) return null
+        val out = ArrayList<String>(3)
+        var i = n
+        while (i > 0) { out.add(w.substring(back[i], i)); i = back[i] }
+        if (out.none { it.length >= 4 }) return null
+        return out.asReversed().joinToString(" ") { DEV_ROMAN_ALL.getValue(it) }
+    }
+
+    /** IPA (IndicPhonemizer, espeak conventions) -> Roman Hinglish letters, longest symbol first. */
+    private val IPA_ROMAN: List<Pair<String, String>> = listOf(
+        "r.h" to "rh", "r." to "r", "kʰ" to "kh", "ɡʰ" to "gh", "cʰ" to "chh", "ɟʰ" to "jh", "ʈʰ" to "th", "ɖʰ" to "dh",
+        "tʰ" to "th", "dʰ" to "dh", "pʰ" to "ph", "bʰ" to "bh", "aː" to "aa", "iː" to "ee", "uː" to "oo", "eː" to "e",
+        "ɛː" to "ai", "oː" to "o", "ɔː" to "au", "k" to "k", "ɡ" to "g", "ŋ" to "n", "c" to "ch", "ɟ" to "j", "ɲ" to "n",
+        "ʈ" to "t", "ɖ" to "d", "ɳ" to "n", "t" to "t", "d" to "d", "n" to "n", "p" to "p", "b" to "b", "m" to "m",
+        "j" to "y", "ɾ" to "r", "r" to "r", "l" to "l", "ʋ" to "v", "ɭ" to "l", "ʃ" to "sh", "ʂ" to "sh", "s" to "s",
+        "ɦ" to "h", "h" to "h", "q" to "q", "x" to "kh", "ɣ" to "gh", "z" to "z", "f" to "f", "ɪ" to "i", "ʊ" to "u",
+        "ɛ" to "e", "ɔ" to "o", "ʌ" to "a", "ə" to "a", "a" to "a", "i" to "i", "u" to "u", "e" to "e", "o" to "o",
+        "ʰ" to "h", "ʱ" to "h",
+    )
+    private val ROMAN_VOWELS = setOf('a', 'e', 'i', 'o', 'u')
+
+    /**
+     * Unseen Devanagari word -> Roman Hinglish through the app's own G2P, so medial schwas are
+     * deleted the way Hindi is spoken ("आपका" -> "aapka", "संभावना" -> "sambhaavna"), with the
+     * usual Hinglish endings (-aa -> -a, -ee -> -i, -oo -> -u). Falls back to [hunterianTransliterate].
+     */
+    fun romanizeDevanagari(word: String): String {
+        val ipa = runCatching { IndicPhonemizer.wordToIpa(word) }.getOrNull()
+            ?.filter { it != 'ˈ' && it != 'ˌ' && it != ' ' }
+        if (ipa.isNullOrEmpty()) return hunterianTransliterate(word)
+        val sb = StringBuilder()
+        var i = 0
+        var lastConsonant: String? = null
+        while (i < ipa.length) {
+            val c = ipa[i]
+            if (c == '\u0303') { sb.append('n'); i++; lastConsonant = null; continue }            // nasal vowel
+            if (c == 'ː') { lastConsonant?.let { sb.append(it[0]) }; i++; continue }           // gemination
+            val hit = IPA_ROMAN.firstOrNull { ipa.startsWith(it.first, i) }
+            if (hit == null) { i++; continue }
+            val roman = hit.second
+            sb.append(roman)
+            lastConsonant = if (roman[0] in ROMAN_VOWELS) null else roman
+            i += hit.first.length
+        }
+        var r = sb.toString()
+        if (r.length > 3) {
+            r = when {
+                r.endsWith("aa") -> r.dropLast(1)
+                r.endsWith("ee") -> r.dropLast(2) + "i"
+                r.endsWith("oo") -> r.dropLast(2) + "u"
+                else -> r
+            }
+        }
+        return r.ifEmpty { hunterianTransliterate(word) }
+    }
 
     /**
      * Algorithmic Devanagari -> Roman (Hunterian-style) fallback for words not in

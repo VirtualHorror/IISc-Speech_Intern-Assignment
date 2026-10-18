@@ -31,6 +31,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import urllib.request
 
@@ -147,6 +148,62 @@ def quantize_matmul_int8(src, dst):
     quantize_dynamic(tmp, dst, weight_type=QuantType.QInt8, op_types_to_quantize=["MatMul"])
     os.remove(tmp)
     log(f"  MatMul-only INT8 -> {os.path.basename(dst)} "
+        f"({os.path.getsize(src)/1e6:.1f}MB -> {os.path.getsize(dst)/1e6:.1f}MB)")
+
+
+def quantize_decoder_shared_table(src, dst):
+    """INT8 Whisper decoder from an optimum fp32 export, one shared token table.
+
+    The exporter stores the tied output projection as a second, pre-transposed copy of the
+    51865 x d embedding ([d, 51865], identical values), doubling the file. MatMul-only
+    dynamic INT8 quantises that copy for the logits; the token-embedding Gather is then
+    re-pointed at the same INT8 table (Gather(axis=1) + Transpose + DequantizeLinear), so
+    the fp32 embedding is dropped and no table is de-quantised per step.
+    """
+    import numpy as np
+    import onnx
+    from onnx import helper, numpy_helper
+    from onnxruntime.quantization import QuantType, quantize_dynamic
+
+    tmp = dst + ".pre.onnx"
+    quantize_dynamic(src, tmp, weight_type=QuantType.QInt8, op_types_to_quantize=["MatMul"])
+    m = onnx.load(tmp)
+    g = m.graph
+    inits = {i.name: i for i in g.initializer}
+    emb_name = "model.decoder.embed_tokens.weight"
+    gather = next(n for n in g.node if n.op_type == "Gather" and n.input[0] == emb_name)
+    emb = numpy_helper.to_array(inits[emb_name])                                   # [V, d] fp32
+    # the quantised proj_out weight: an int8 [d, V] initializer feeding a MatMulInteger
+    cand = [i for i in g.initializer if list(i.dims) == [emb.shape[1], emb.shape[0]] and i.name.endswith("_quantized")]
+    assert len(cand) == 1, [c.name for c in cand]
+    wq = cand[0]
+    mmi = next(n for n in g.node if n.op_type in ("MatMulInteger", "DynamicQuantizeMatMul") and wq.name in n.input)
+    if mmi.op_type == "MatMulInteger":
+        zp_name = mmi.input[3]
+        scale_name = wq.name.replace("_quantized", "_scale")
+    else:
+        scale_name, zp_name = mmi.input[2], mmi.input[3]
+    assert scale_name in inits and zp_name in inits, (scale_name, zp_name)
+    deq = numpy_helper.to_array(wq).astype(np.float32).T
+    deq = (deq - numpy_helper.to_array(inits[zp_name]).astype(np.float32)) * numpy_helper.to_array(inits[scale_name])
+    err = float(np.max(np.abs(deq - emb)))
+    out = gather.output[0]
+    new_nodes = []
+    for n in g.node:
+        if n is gather:
+            new_nodes.append(helper.make_node("Gather", [wq.name, n.input[1]], [out + "_q_axis1"], name=n.name, axis=1))
+            new_nodes.append(helper.make_node("Transpose", [out + "_q_axis1"], [out + "_q"], name=n.name + "_to_bld",
+                                              perm=[1, 2, 0]))
+            new_nodes.append(helper.make_node("DequantizeLinear", [out + "_q", scale_name, zp_name], [out],
+                                              name=n.name + "_dequant"))
+            continue
+        new_nodes.append(n)
+    del g.node[:]
+    g.node.extend(new_nodes)
+    g.initializer.remove(inits[emb_name])
+    onnx.save(m, dst)
+    os.remove(tmp)
+    log(f"  INT8 decoder (shared table, max |dequant - fp32 emb| = {err:.4f}) -> {os.path.basename(dst)} "
         f"({os.path.getsize(src)/1e6:.1f}MB -> {os.path.getsize(dst)/1e6:.1f}MB)")
 
 
@@ -468,19 +525,30 @@ def prepare_lexicon():
     return True
 
 
-STEPS = ("stt", "vocab", "vad", "tts", "mel", "lexicon")
+STEPS = ("stt", "stt-hi", "vocab", "vad", "tts", "mel", "lexicon")
+
+# Hindi specialist for Hindi turns, chosen with speech_lab/eval_hindi_asr.py (FLEURS hi + the
+# closed-loop commands). Exporting it needs torch + optimum (a separate venv): pass its
+# `optimum-cli` with --optimum-cli or VAANI_OPTIMUM_CLI.
+HINDI_STT_REPO = "ARTPARK-IISc/whisper-tiny-vaani-hindi"
+HINDI_STT_LICENSE = "Apache-2.0"
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--only", default=",".join(STEPS),
                     help=f"comma-separated subset of {STEPS} (default: all)")
-    only = set(ap.parse_args().only.split(","))
+    ap.add_argument("--optimum-cli", default=os.environ.get("VAANI_OPTIMUM_CLI", "optimum-cli"),
+                    help="optimum-cli of a torch venv (only for --only stt-hi)")
+    args = ap.parse_args()
+    only = set(args.only.split(","))
     ok = True
 
     # 1) Whisper tiny multilingual INT8 encoder + decoder + KV-cache decoder_with_past.
     if "stt" in only or "vocab" in only:
         ok = prepare_whisper(only) and ok
+    if "stt-hi" in only:
+        ok = prepare_whisper_hindi(args.optimum_cli) and ok
     if "vad" in only:
         ok = prepare_vad() and ok
     if "tts" in only:
@@ -494,6 +562,30 @@ def main():
         log("FAILED: one or more assets missing/oversized")
         sys.exit(1)
     log("OK: all deployment assets prepared")
+
+
+def prepare_whisper_hindi(optimum_cli):
+    """Hindi-trained Whisper-tiny -> ONNX (optimum, separate decoders for the KV cache) ->
+    fp16-stored encoder (fp32 compute) + INT8 decoders sharing one token table (ORT 1.18-safe).
+    The encoder stays fp16-stored: INT8 there nearly doubled FLEURS CER (0.258 vs 0.132,
+    evaluation_metrics.json -> hindi_asr_precision_ablation) for 4.8 MB saved."""
+    log(f"Whisper Hindi specialist ({HINDI_STT_REPO}, {HINDI_STT_LICENSE})")
+    out = "/tmp/raw_models/hindi_export"
+    names = ("encoder_model.onnx", "decoder_model.onnx", "decoder_with_past_model.onnx")
+    if not all(os.path.exists(os.path.join(out, n)) for n in names):
+        cmd = [optimum_cli, "export", "onnx", "-m", HINDI_STT_REPO, "--task", "automatic-speech-recognition-with-past",
+               "--no-post-process", "--opset", "14", out]
+        log("  exporting with", " ".join(cmd))
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode != 0:
+            log("  ERROR: export failed:", (r.stdout + r.stderr)[-600:])
+            return False
+    fp16_storage(os.path.join(out, names[0]), f"{ASSETS}/vaani_stt_hi_encoder.fp16.onnx")
+    quantize_decoder_shared_table(os.path.join(out, names[1]), f"{ASSETS}/vaani_stt_hi_decoder.int8.onnx")
+    quantize_decoder_shared_table(os.path.join(out, names[2]), f"{ASSETS}/vaani_stt_hi_decoder_with_past.int8.onnx")
+    for n in ("vaani_stt_hi_encoder.fp16.onnx", "vaani_stt_hi_decoder.int8.onnx", "vaani_stt_hi_decoder_with_past.int8.onnx"):
+        set_metadata(f"{ASSETS}/{n}", HINDI_STT_REPO, HINDI_STT_LICENSE)
+    return True
 
 
 def prepare_whisper(only):

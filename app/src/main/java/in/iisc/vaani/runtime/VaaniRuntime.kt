@@ -11,6 +11,7 @@ import `in`.iisc.vaani.neural.VaaniTtsConfig
 import `in`.iisc.vaani.neural.VaaniTtsEngine
 import `in`.iisc.vaani.neural.VaaniVadEngine
 import `in`.iisc.vaani.neural.VaaniVocab
+import `in`.iisc.vaani.neural.WhisperFiles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -42,6 +43,7 @@ class VaaniRuntime private constructor(
         val kvCache: Boolean,
         val modelMb: Double,
         val lexiconWords: Int,
+        val hindiModel: String? = null,
     )
 
     override fun close() {
@@ -55,6 +57,11 @@ class VaaniRuntime private constructor(
         const val ENCODER = "vaani_stt_encoder.int8.onnx"
         const val DECODER = "vaani_stt_decoder.int8.onnx"
         const val DECODER_PAST = "vaani_stt_decoder_with_past.int8.onnx"
+        // Hindi specialist (optional): a Hindi-trained Whisper-tiny for every Hindi turn.
+        const val HI_ENCODER = "vaani_stt_hi_encoder.fp16.onnx"
+        const val HI_DECODER = "vaani_stt_hi_decoder.int8.onnx"
+        const val HI_DECODER_PAST = "vaani_stt_hi_decoder_with_past.int8.onnx"
+        const val HI_LABEL = "whisper-tiny-hi"
         const val TTS = "vaani_tts_vits.fp16.onnx"
         const val VAD = "vaani_vad.onnx"
         private const val MEL = "vaani_mel_filters.bin"
@@ -70,7 +77,10 @@ class VaaniRuntime private constructor(
                 onProgress("Extracting INT8 models…")
                 val dir = File(context.filesDir, "$DIR/v${BuildConfig.VERSION_CODE}").apply { mkdirs() }
                 File(context.filesDir, DIR).listFiles()?.forEach { if (it != dir) it.deleteRecursively() }
-                val paths = listOf(ENCODER, DECODER, DECODER_PAST, TTS, VAD).associateWith { extract(context, dir, it) }
+                val hindiNames = listOf(HI_ENCODER, HI_DECODER, HI_DECODER_PAST)
+                val withHindi = hindiNames.all { assetExists(context, it) }
+                val names = listOf(ENCODER, DECODER, DECODER_PAST, TTS, VAD) + if (withHindi) hindiNames else emptyList()
+                val paths = names.associateWith { extract(context, dir, it) }
                 val tExtract = System.nanoTime()
 
                 onProgress("Loading lexicon + tokenizer…")
@@ -83,8 +93,10 @@ class VaaniRuntime private constructor(
                 onProgress("Loading Whisper INT8 (KV-cache) …")
                 val vad = VaaniVadEngine(paths.getValue(VAD).path)
                 val stt = VaaniSttEngine(
-                    paths.getValue(ENCODER).path, paths.getValue(DECODER).path,
-                    paths[DECODER_PAST]?.path, vocab, mel,
+                    WhisperFiles(paths.getValue(ENCODER).path, paths.getValue(DECODER).path, paths[DECODER_PAST]?.path, "whisper-tiny"),
+                    vocab, mel,
+                    hindi = if (withHindi) WhisperFiles(paths.getValue(HI_ENCODER).path, paths.getValue(HI_DECODER).path,
+                        paths.getValue(HI_DECODER_PAST).path, HI_LABEL) else null,
                 )
                 val tStt = System.nanoTime()
 
@@ -96,6 +108,7 @@ class VaaniRuntime private constructor(
                 runCatching {
                     vad.process(FloatArray(VaaniVadEngine.CHUNK_SAMPLES)); vad.reset()
                     stt.transcribe(FloatArray(NeonAudioProcessor.SAMPLE_RATE / 2), LanguageMode.ENGLISH)
+                    if (withHindi) stt.transcribe(FloatArray(NeonAudioProcessor.SAMPLE_RATE / 2), LanguageMode.HINGLISH)
                     tts.synthesize(HinglishCodec.toAcousticDevanagariScript("Hello", "en"))
                 }
                 val tEnd = System.nanoTime()
@@ -112,6 +125,7 @@ class VaaniRuntime private constructor(
                         kvCache = stt.usesKvCache,
                         modelMb = mb,
                         lexiconWords = lexicon.size,
+                        hindiModel = stt.hindiModelLabel,
                     ),
                 )
             }
@@ -127,6 +141,9 @@ class VaaniRuntime private constructor(
             if (!tmp.renameTo(out)) { tmp.copyTo(out, overwrite = true); tmp.delete() }
             return out
         }
+
+        private fun assetExists(context: Context, name: String): Boolean =
+            runCatching { context.assets.openFd("$DIR/$name").use { true } }.getOrDefault(false)
 
         private fun readAsset(context: Context, name: String): String =
             context.assets.open("$DIR/$name").bufferedReader(Charsets.UTF_8).use { it.readText() }

@@ -28,12 +28,12 @@ class HinglishCodecTest {
 
     @Test fun prompt1_weatherForecast() {
         val dev = "वेदर फोरकास्ट फॉर बैंगलोर"
-        assertEquals("weather forecast for Bangalore", HinglishCodec.normalizeSttTranscript(dev))
+        assertEquals("Weather forecast for Bangalore", HinglishCodec.normalizeSttTranscript(dev))
     }
 
     @Test fun prompt2_reminderMeeting() {
         val dev = "रिमाइंडर फॉर माय मीटिंग एट 5 PM"
-        assertEquals("reminder for my meeting at 5 PM", HinglishCodec.normalizeSttTranscript(dev))
+        assertEquals("Reminder for my meeting at 5 PM", HinglishCodec.normalizeSttTranscript(dev))
     }
 
     @Test fun prompt3_alarmHinglish() {
@@ -85,7 +85,7 @@ class HinglishCodecTest {
     @Test fun hunterianFallbackDropsFinalSchwa() {
         // "कमल" is not in the lexicon -> algorithmic transliteration, final schwa dropped.
         assertEquals("kamal", HinglishCodec.hunterianTransliterate("कमल"))
-        assertEquals("kamal", HinglishCodec.normalizeSttTranscript("कमल"))
+        assertEquals("Kamal", HinglishCodec.normalizeSttTranscript("कमल"))       // sentence-cased
     }
 
     @Test fun emptyInputs() {
@@ -222,5 +222,30 @@ class HinglishCodecTest {
         assertTrue(!HinglishCodec.isLikelyHallucination("7 baje", expectingPrompt = true))
         assertTrue(!HinglishCodec.isLikelyHallucination("Mujhe kal subah 7 baje ka alarm set karna hai", expectingPrompt = true))
         assertTrue(!HinglishCodec.isLikelyHallucination("Set alarms for 6, 7, 8 and 9 am"))
+    }
+
+    // ===== Devanagari from the Hindi STT specialist -> Roman Hinglish ===========
+
+    @Test fun devanagariCommandsFromTheHindiModelBecomeRomanHinglish() {
+        assertEquals("Mujhe kal subah 7 baje ka alarm set karna hai", hi("मुझे कल सुबह सात बजे का अलार्म सेट करना है"))
+        assertEquals("Mujhe kal subah 7 baje ka alarm set karna hai.", hi("मुझे कल सुबह 7 बजे का अलार्म सेट करना है।"))
+        assertEquals("Aaj ka schedule kya hai, aur meri next meeting kab hai?", hi("आज का शेड्यूल क्या है, और मेरी नेक्स्ट मीटिंग कब है?"))
+        assertEquals("Kal shaam 6 baje meeting ka reminder laga do", hi("कल शाम छह बजे मीटिंग का रिमाइंडर लगा दो"))
+    }
+
+    @Test fun devanagariNumbersBecomeDigitsOnlyNextToAUnit() {
+        assertEquals("20 se 28 degree tak rahega", hi("बीस से अट्ठाईस डिग्री तक रहेगा"))
+        assertEquals("4:30 PM par lab review hai", hi("साढ़े चार पी एम पर लैब रिव्यू है"))
+        assertEquals("5 PM ka reminder", hi("पाँच पी एम का रिमाइंडर"))
+        assertEquals("Teen meetings hain", hi("तीन मीटिंग्स हैं"))                // a count stays a word
+    }
+
+    @Test fun devanagariGoldSpellingsFusedWordsAndUnseenWords() {
+        assertEquals("Aapki agli meeting kab hai", hi("आपकी अगली मीटिंग कब है"))   // reversed Hinglish lexicon
+        assertEquals("Meri next meeting kab hai", hi("मेरी नेक्स्टमीटिंग कब है"))  // fused by the model
+        assertEquals("aapka", HinglishCodec.romanizeDevanagari("आपका"))           // G2P schwa deletion, -aa -> -a
+        assertEquals("kamal", HinglishCodec.romanizeDevanagari("कमल"))
+        assertEquals("Theek hai, maine aapki meeting ke liye 5 PM ka reminder set kar diya hai.",
+            hi("ठीक है, मैंने आपकी मीटिंग के लिए पाँच पी एम का रिमाइंडर सेट कर दिया है।"))
     }
 }

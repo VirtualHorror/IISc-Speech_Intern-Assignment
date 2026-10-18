@@ -656,11 +656,26 @@
       "heldout_display_cer_mean": 0.33063,
       "encoder": "vaani_stt_encoder.int8.onnx",
       "runs_per_utterance": 6
+    },
+    "iteration4_hindi_specialist": {
+      "generated_at": "2026-10-18T22:29:49+00:00",
+      "phoneme_coverage_pct": 100,
+      "espeak_segmental_match_pct": 98.49,
+      "forced_cer_mean": 0.050847,
+      "auto_cer_mean": 0.050847,
+      "lid_accuracy_pct": 100.0,
+      "raw_cer_hi": 0.032814,
+      "display_cer_mean": 0.084236,
+      "display_cer_hi": 0.099592,
+      "heldout_raw_cer_mean": 0.065419,
+      "heldout_display_cer_mean": 0.17855,
+      "encoder": "vaani_stt_encoder.int8.onnx",
+      "runs_per_utterance": 6
     }
   },
   "closed_loop": {
-    "label": "session3_final",
-    "generated_at": "2026-10-18T16:34:53+00:00",
+    "label": "iteration4_hindi_specialist",
+    "generated_at": "2026-10-18T22:29:49+00:00",
     "host": {
       "cpu": "x86_64",
       "cpu_model": "Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz",
@@ -674,19 +689,20 @@
       "encoder": "vaani_stt_encoder.int8.onnx",
       "tts": "vaani_tts_vits.fp16.onnx",
       "decoder": "vaani_stt_decoder.int8.onnx",
-      "decoder_with_past": "vaani_stt_decoder_with_past.int8.onnx"
+      "decoder_with_past": "vaani_stt_decoder_with_past.int8.onnx",
+      "hindi_specialist": "vaani_stt_hi_encoder.fp16.onnx"
     },
     "g2p": {
       "phoneme_coverage_pct": 100,
-      "phoneme_codepoints_total": 4644,
+      "phoneme_codepoints_total": 4664,
       "phoneme_codepoints_dropped": 0,
       "missing_symbols": {},
       "espeak_parity": {
         "reference": "espeak-ng hi (piper training phonemizer), host-side only",
-        "words": 460,
-        "exact_match_pct": 95.87,
-        "segmental_match_pct": 98.48,
-        "phoneme_error_rate_pct": 1.28,
+        "words": 463,
+        "exact_match_pct": 95.9,
+        "segmental_match_pct": 98.49,
+        "phoneme_error_rate_pct": 1.27,
         "top_mismatches": [
           {
             "word": "थंडरस्टॉर्म",
@@ -729,36 +745,36 @@
     "mel_frontend": {
       "filterbank": "vaani_mel_filters.bin (Slaney, 80x201)",
       "cpp_vs_numpy_whisper_reference_max_abs_err": {
-        "mean": 8.2321e-06,
-        "median": 7.7188e-06,
-        "min": 4.2915e-06,
-        "max": 3.5018e-05
+        "mean": 8.4923e-06,
+        "median": 7.6294e-06,
+        "min": 4.2617e-06,
+        "max": 3.8207e-05
       },
       "fft_frames_fraction": {
-        "mean": 0.14838,
-        "median": 0.135,
-        "min": 0.083333,
-        "max": 0.25333
+        "mean": 0.14368,
+        "median": 0.13,
+        "min": 0.082667,
+        "max": 0.246
       },
       "cpp_ms": {
-        "mean": 11.289,
-        "median": 9.5411,
-        "min": 5.3079,
-        "max": 32.025
+        "mean": 7.9261,
+        "median": 7.1724,
+        "min": 5.0425,
+        "max": 15.684
       },
       "numpy_reference_ms": {
-        "mean": 60.093,
-        "median": 57.648,
-        "min": 29.892,
-        "max": 126.15
+        "mean": 44.633,
+        "median": 44.011,
+        "min": 27.905,
+        "max": 70.653
       }
     },
     "resampler_22k05_to_16k": {
       "snr_db_vs_scipy_resample_poly": {
-        "mean": 43.358,
-        "median": 42.789,
-        "min": 38.977,
-        "max": 50.27
+        "mean": 43.2,
+        "median": 42.888,
+        "min": 38.264,
+        "max": 48.96
       }
     },
     "stt": {
@@ -766,107 +782,107 @@
       "lid_two_way_accuracy_pct": 100.0,
       "auto_language": {
         "cer": {
-          "mean": 0.31607,
-          "median": 0.2254,
+          "mean": 0.050847,
+          "median": 0.02175,
           "min": 0.0,
-          "max": 0.8421
+          "max": 0.3143
         },
         "wer": {
-          "mean": 0.51212,
-          "median": 0.52275,
+          "mean": 0.14504,
+          "median": 0.1176,
           "min": 0.0,
-          "max": 1.1667
+          "max": 0.5455
         }
       },
       "forced_language": {
         "cer": {
-          "mean": 0.31607,
-          "median": 0.2254,
+          "mean": 0.050847,
+          "median": 0.02175,
           "min": 0.0,
-          "max": 0.8421
+          "max": 0.3143
         },
         "wer": {
-          "mean": 0.51212,
-          "median": 0.52275,
+          "mean": 0.14504,
+          "median": 0.1176,
           "min": 0.0,
-          "max": 1.1667
+          "max": 0.5455
         }
       },
       "raw_cer_by_language": {
         "en": {
-          "mean": 0.065092,
-          "median": 0.01975,
+          "mean": 0.068881,
+          "median": 0.0,
           "min": 0.0,
-          "max": 0.2857
+          "max": 0.3143
         },
         "hi": {
-          "mean": 0.56704,
-          "median": 0.5835,
-          "min": 0.1944,
-          "max": 0.8421
+          "mean": 0.032814,
+          "median": 0.026,
+          "min": 0.0,
+          "max": 0.1129
         },
         "all": {
-          "mean": 0.31607,
-          "median": 0.2254,
+          "mean": 0.050847,
+          "median": 0.02175,
           "min": 0.0,
-          "max": 0.8421
+          "max": 0.3143
         }
       },
       "display_transcript": {
         "what": "HinglishCodec.displayTranscript(raw, detected language): the text the app shows and sends to the LLM, scored in Roman script against the reference text",
         "cer_by_language": {
           "en": {
-            "mean": 0.065092,
-            "median": 0.01975,
+            "mean": 0.068881,
+            "median": 0.0,
             "min": 0.0,
-            "max": 0.2857
+            "max": 0.3143
           },
           "hi": {
-            "mean": 0.53543,
-            "median": 0.5835,
+            "mean": 0.099592,
+            "median": 0.087,
             "min": 0.0,
-            "max": 0.8421
+            "max": 0.3016
           },
           "all": {
-            "mean": 0.30026,
-            "median": 0.1714,
+            "mean": 0.084236,
+            "median": 0.0702,
             "min": 0.0,
-            "max": 0.8421
+            "max": 0.3143
           }
         },
         "wer_by_language": {
           "en": {
-            "mean": 0.17029,
-            "median": 0.1213,
+            "mean": 0.15136,
+            "median": 0.1176,
             "min": 0.0,
-            "max": 0.5556
+            "max": 0.5455
           },
           "hi": {
-            "mean": 0.75869,
-            "median": 0.75,
+            "mean": 0.1175,
+            "median": 0.0909,
             "min": 0.0,
-            "max": 1.1667
+            "max": 0.375
           },
           "all": {
-            "mean": 0.46449,
-            "median": 0.4222,
+            "mean": 0.13443,
+            "median": 0.0909,
             "min": 0.0,
-            "max": 1.1667
+            "max": 0.5455
           }
         },
         "normalizer_us_per_call": {
-          "mean": 94.309,
-          "median": 72.463,
-          "min": 15.571,
-          "max": 388.93
+          "mean": 147.15,
+          "median": 98.005,
+          "min": 31.917,
+          "max": 609.42
         }
       },
       "post_corrector": {
         "what": "paired raw -> display CER on the same transcripts (auto language, Latin-script raw output only, so both sides are scored against the same Roman reference)",
         "corpus": {
           "en": {
-            "raw_cer": 0.0651,
-            "display_cer": 0.0651,
+            "raw_cer": 0.0689,
+            "display_cer": 0.0689,
             "change": {
               "mean": 0.0,
               "ci95": [
@@ -878,80 +894,52 @@
               "worsened": 0
             }
           },
-          "hi": {
-            "raw_cer": 0.567,
-            "display_cer": 0.5354,
+          "all": {
+            "raw_cer": 0.0689,
+            "display_cer": 0.0689,
             "change": {
-              "mean": -0.0316,
+              "mean": 0.0,
               "ci95": [
-                -0.0554,
-                -0.0123
+                0.0,
+                0.0
               ],
               "pairs": 36,
-              "improved": 10,
+              "improved": 0,
               "worsened": 0
             }
           },
-          "all": {
-            "raw_cer": 0.3161,
-            "display_cer": 0.3003,
-            "change": {
-              "mean": -0.0158,
-              "ci95": [
-                -0.0291,
-                -0.0053
-              ],
-              "pairs": 72,
-              "improved": 10,
-              "worsened": 0
-            }
-          },
-          "devanagari_raw_outputs_excluded": 0
+          "devanagari_raw_outputs_excluded": 36
         },
         "heldout": {
           "en": {
-            "raw_cer": 0.0618,
-            "display_cer": 0.0618,
+            "raw_cer": 0.0189,
+            "display_cer": 0.0189,
             "change": {
               "mean": 0.0,
               "ci95": [
                 0.0,
                 0.0
               ],
-              "pairs": 18,
+              "pairs": 12,
               "improved": 0,
               "worsened": 0
             }
           },
-          "hi": {
-            "raw_cer": 0.5082,
-            "display_cer": 0.4919,
-            "change": {
-              "mean": -0.0163,
-              "ci95": [
-                -0.031,
-                -0.0047
-              ],
-              "pairs": 30,
-              "improved": 9,
-              "worsened": 1
-            }
-          },
           "all": {
-            "raw_cer": 0.3408,
-            "display_cer": 0.3306,
+            "raw_cer": 0.0189,
+            "display_cer": 0.0189,
             "change": {
-              "mean": -0.0102,
+              "mean": 0.0,
               "ci95": [
-                -0.0196,
-                -0.0029
+                0.0,
+                0.0
               ],
-              "pairs": 48,
-              "improved": 9,
-              "worsened": 1
+              "pairs": 12,
+              "improved": 0,
+              "worsened": 0
             }
           },
-          "devanagari_raw_outputs_excluded": 0
+          "devanagari_raw_outputs_excluded": 36
         }
       },
       "heldout": {
@@ -968,179 +956,179 @@
         "lid_two_way_accuracy_pct": 87.5,
         "raw_auto_cer": {
           "en": {
-            "mean": 0.06185,
-            "median": 0.02,
+            "mean": 0.091983,
+            "median": 0.04,
             "min": 0.0,
-            "max": 0.3913
+            "max": 0.2857
           },
           "hi": {
-            "mean": 0.50823,
-            "median": 0.46415,
-            "min": 0.1667,
-            "max": 1.0
+            "mean": 0.04948,
+            "median": 0.04085,
+            "min": 0.0,
+            "max": 0.1935
           },
           "all": {
-            "mean": 0.34084,
-            "median": 0.3333,
+            "mean": 0.065419,
+            "median": 0.04,
             "min": 0.0,
-            "max": 1.0
+            "max": 0.2857
           }
         },
         "display_cer": {
           "en": {
-            "mean": 0.06185,
-            "median": 0.02,
+            "mean": 0.36286,
+            "median": 0.04,
             "min": 0.0,
-            "max": 0.3913
+            "max": 1.1739
           },
           "hi": {
-            "mean": 0.4919,
-            "median": 0.4722,
-            "min": 0.1,
-            "max": 1.0
+            "mean": 0.06796,
+            "median": 0.037,
+            "min": 0.0,
+            "max": 0.2222
           },
           "all": {
-            "mean": 0.33063,
-            "median": 0.2639,
+            "mean": 0.17855,
+            "median": 0.037,
             "min": 0.0,
-            "max": 1.0
+            "max": 1.1739
           }
         },
         "display_wer": {
           "en": {
-            "mean": 0.1347,
-            "median": 0.07145,
+            "mean": 0.39219,
+            "median": 0.18255,
             "min": 0.0,
-            "max": 0.5
+            "max": 1.125
           },
           "hi": {
-            "mean": 0.89075,
-            "median": 0.8611,
-            "min": 0.3333,
-            "max": 1.5
+            "mean": 0.16481,
+            "median": 0.1667,
+            "min": 0.0,
+            "max": 0.3333
           },
           "all": {
-            "mean": 0.60723,
-            "median": 0.61115,
+            "mean": 0.25008,
+            "median": 0.1667,
             "min": 0.0,
-            "max": 1.5
+            "max": 1.125
           }
         },
         "samples": {
           "H1-hi": {
             "ref": "Kal shaam 6 baje meeting ka reminder laga do.",
-            "raw": "kar sham chae bha ji, mi ting ka remandar laga do",
-            "display": "kar shaam chae bha ji, meeting ka remandar laga do"
+            "raw": "कल शाम छह बजे मीटिंग का रिमाण्डर लगा दो",
+            "display": "Kal shaam 6 baje meeting ka rimaandar laga do"
           },
           "H2-hi": {
             "ref": "Parson subah 8 baje ka alarm set kar do.",
-            "raw": "Perseusaba 8 bajaya alarm is 8 kar 2",
-            "display": "Perseusaba 8 bajaya alarm is 8 kar 2"
+            "raw": "पर सो सुबह आठ बजे का अलार्म सेट कर दो",
+            "display": "Par so subah 8 baje ka alarm set kar do"
           },
           "H3-hi": {
             "ref": "Kya kal Bangalore mein baarish hogi?",
-            "raw": "Keakal Bangalore me barishogi",
-            "display": "Keakal Bangalore me barishogi"
+            "raw": "क्या कल बैनलोर में बारिश होगी",
+            "display": "Kya kal bainlor mein baarish hogi"
           },
           "H4-hi": {
             "ref": "Meri agli meeting kitne baje hai?",
-            "raw": "My ugly meeting is so much better than this.",
-            "display": "My ugly meeting is so much better than this."
+            "raw": "मेरी अगली मीटिंग कितने बजे हैं",
+            "display": "Meri agli meeting kitne baje hain"
           },
           "H5-hi": {
             "ref": "Aaj shaam ka mausam kaisa rahega?",
-            "raw": "Today, I am a Muslim, kaisar higa",
-            "display": "Today, I am a Muslim, kaisar higa"
+            "raw": "आज शाम का मौसम कैसा रहेगा",
+            "display": "Aaj shaam ka mausam kaisa rahega"
           },
           "H6-en": {
             "ref": "Wake me up at 6:30 AM tomorrow.",
-            "raw": "Wake me up 830 AM tomorrow.",
-            "display": "Wake me up 830 AM tomorrow."
+            "raw": "वेह एक नीं अब एफसिक्स थर्टी ए एन तुमारो",
+            "display": "Veh ek nin ab ephsiks tharti e en tumaaro"
           },
           "H7-en": {
             "ref": "What time is my next meeting today?",
-            "raw": "But, time is my next meeting today.",
-            "display": "But, time is my next meeting today."
+            "raw": "What time is my next meeting today?",
+            "display": "What time is my next meeting today?"
           },
           "H8-en": {
             "ref": "Remind me to call the lab at 3 PM.",
-            "raw": "Remind me to call the lab at 3pm.",
-            "display": "Remind me to call the lab at 3pm."
+            "raw": "Remind me to call the lab at TPM.",
+            "display": "Remind me to call the lab at TPM."
           }
         }
       },
       "encoder_ms": {
-        "mean": 551.54,
-        "median": 538.48,
-        "min": 378.53,
-        "max": 1005.9
+        "mean": 489.38,
+        "median": 582.05,
+        "min": 248.45,
+        "max": 989.53
       },
       "lid_step0_ms": {
-        "mean": 95.646,
-        "median": 89.903,
-        "min": 52.323,
-        "max": 226.25
+        "mean": 57.606,
+        "median": 58.432,
+        "min": 33.347,
+        "max": 80.228
       },
       "decoder": {
         "cache_free_session1_ms": {
-          "mean": 999.31,
-          "median": 925.77,
-          "min": 437.08,
-          "max": 1900.9
+          "mean": 1282.7,
+          "median": 959.09,
+          "min": 274.13,
+          "max": 5439.6
         },
         "kv_cache_session2_ms": {
-          "mean": 349.52,
-          "median": 332.61,
-          "min": 211.35,
-          "max": 648.62
+          "mean": 332.25,
+          "median": 291.2,
+          "min": 151.78,
+          "max": 1018.6
         },
         "cache_free_ms_per_token": {
-          "mean": 66.938,
-          "median": 64.565,
-          "min": 35.018,
-          "max": 132.52
+          "mean": 33.848,
+          "median": 32.336,
+          "min": 27.409,
+          "max": 66.337
         },
         "kv_cache_ms_per_token": {
-          "mean": 19.85,
-          "median": 19.01,
-          "min": 12.506,
-          "max": 46.33
+          "mean": 9.9417,
+          "median": 9.5225,
+          "min": 6.6842,
+          "max": 15.599
         },
-        "speedup_mean": 2.86,
-        "kv_vs_cache_free_identical_text_pct": 29.17,
+        "speedup_mean": 3.86,
+        "kv_vs_cache_free_identical_text_pct": 32.5,
         "note": "both paths use identical masks (script calibration + Whisper non-speech + specials, suppress_blank, repetition guard); identical text => exact KV cache"
       },
       "stt_total_ms": {
-        "mean": 912.35,
-        "median": 884.64,
-        "min": 620.94,
-        "max": 1675.6
+        "mean": 829.56,
+        "median": 904.92,
+        "min": 414.91,
+        "max": 2020.8
       },
       "stt_rtf": {
-        "mean": 0.22515,
-        "median": 0.22309,
-        "min": 0.11174,
-        "max": 0.5885
+        "mean": 0.21018,
+        "median": 0.21735,
+        "min": 0.068667,
+        "max": 0.53878
       }
     },
     "tts": {
       "rtf": {
-        "mean": 0.16481,
-        "median": 0.1565,
-        "min": 0.11045,
-        "max": 0.36011
+        "mean": 0.08534,
+        "median": 0.083145,
+        "min": 0.067352,
+        "max": 0.16405
       },
       "first_sentence_ms": {
-        "mean": 709.61,
-        "median": 690.75,
-        "min": 386.2,
-        "max": 1404.7
+        "mean": 357.63,
+        "median": 338.04,
+        "min": 220.6,
+        "max": 761.78
       },
       "raw_peak_amplitude": {
-        "mean": 0.82456,
-        "median": 0.82433,
-        "min": 0.74165,
-        "max": 0.8907
+        "mean": 0.82874,
+        "median": 0.82676,
+        "min": 0.76531,
+        "max": 0.91473
       }
     },
     "utterances": [
@@ -1150,7 +1138,7 @@
         "lang": "en",
         "text": "What is the weather forecast for Bangalore tomorrow?",
         "acoustic_devanagari": "व्हाट इज़ द वेदर फोरकास्ट फॉर बैंगलोर टुमारो?",
-        "audio_sec": 3.947,
+        "audio_sec": 3.773,
         "lid_detected": [
           "en",
           "en",
@@ -1159,78 +1147,86 @@
           "en",
           "en"
         ],
+        "stt_model": [
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny"
+        ],
         "lid_p_hi": [
+          0.16,
+          0.15,
           0.129,
-          0.123,
-          0.062,
-          0.288,
-          0.081,
-          0.254
+          0.141,
+          0.195,
+          0.204
         ],
         "transcripts_auto": [
           "What is the weather forecast for Bangalore tomorrow?",
           "But, is the weather forecast for Bangalore tomorrow?",
           "What is the weather forecast for Bangalore tomorrow?",
-          "But, is the weather forecast for Bangalore tomorrow?",
           "What is the weather forecast for Bangalore tomorrow?",
+          "But, is the weather forecast for Bangalore tomorrow?",
           "What is the weather forecast for Bangalore tomorrow?"
         ],
         "transcripts_forced": [
           "What is the weather forecast for Bangalore tomorrow?",
           "But, is the weather forecast for Bangalore tomorrow?",
           "What is the weather forecast for Bangalore tomorrow?",
-          "But, is the weather forecast for Bangalore tomorrow?",
           "What is the weather forecast for Bangalore tomorrow?",
+          "But, is the weather forecast for Bangalore tomorrow?",
           "What is the weather forecast for Bangalore tomorrow?"
         ],
         "cer_forced": [
           0.0,
           0.0682,
           0.0,
-          0.0682,
           0.0,
+          0.0682,
           0.0
         ],
         "wer_forced": [
           0.0,
           0.125,
           0.0,
-          0.125,
           0.0,
+          0.125,
           0.0
         ],
         "cer_auto": [
           0.0,
           0.0682,
           0.0,
-          0.0682,
           0.0,
+          0.0682,
           0.0
         ],
         "transcripts_display": [
           "What is the weather forecast for Bangalore tomorrow?",
           "But, is the weather forecast for Bangalore tomorrow?",
           "What is the weather forecast for Bangalore tomorrow?",
-          "But, is the weather forecast for Bangalore tomorrow?",
           "What is the weather forecast for Bangalore tomorrow?",
+          "But, is the weather forecast for Bangalore tomorrow?",
           "What is the weather forecast for Bangalore tomorrow?"
         ],
         "cer_display": [
           0.0,
           0.0682,
           0.0,
-          0.0682,
           0.0,
+          0.0682,
           0.0
         ],
-        "tts_rtf": 0.1855,
-        "stt_ms": 1100.4,
+        "tts_rtf": 0.0873,
+        "stt_ms": 494.9,
         "tokens": [
           11,
           12,
           11,
-          12,
           11,
+          12,
           11
         ]
       },
@@ -1240,7 +1236,7 @@
         "lang": "en",
         "text": "Can you set a reminder for my meeting at 5 PM?",
         "acoustic_devanagari": "कैन यू सेट अ रिमाइंडर फॉर माय मीटिंग एट फ़ाइव पी एम?",
-        "audio_sec": 4.656,
+        "audio_sec": 4.389,
         "lid_detected": [
           "en",
           "en",
@@ -1249,79 +1245,87 @@
           "en",
           "en"
         ],
+        "stt_model": [
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny"
+        ],
         "lid_p_hi": [
-          0.039,
-          0.034,
-          0.018,
-          0.028,
-          0.031,
-          0.087
+          0.157,
+          0.141,
+          0.036,
+          0.071,
+          0.063,
+          0.015
         ],
         "transcripts_auto": [
-          "Can you say it? I remind that for my meeting at 5 p.m.",
-          "Can you set a reminder for my meeting at 5pm?",
+          "Can you say it? I remind you that for my meeting at 5 p.m.",
           "Can you set a reminder for my meeting at 5 p.m.?",
-          "Can you say it? I remind you for my meeting at 5 p.m.",
-          "Can you set or remind that for my meeting at 5 p.m.",
-          "Can you say it or remind that for my meeting at 5 ppm?"
+          "Can you set a reminder for my meeting at 5 p.m.",
+          "Can you set a reminder for my meeting at 5 p.m.",
+          "Can you set a reminder for my meeting at 5 p.m.",
+          "Can you say it? I'm reminded for my meeting at 5 p.m."
         ],
         "transcripts_forced": [
-          "Can you say it? I remind that for my meeting at 5 p.m.",
-          "Can you set a reminder for my meeting at 5pm?",
+          "Can you say it? I remind you that for my meeting at 5 p.m.",
           "Can you set a reminder for my meeting at 5 p.m.?",
-          "Can you say it? I remind you for my meeting at 5 p.m.",
-          "Can you set or remind that for my meeting at 5 p.m.",
-          "Can you say it or remind that for my meeting at 5 ppm?"
+          "Can you set a reminder for my meeting at 5 p.m.",
+          "Can you set a reminder for my meeting at 5 p.m.",
+          "Can you set a reminder for my meeting at 5 p.m.",
+          "Can you say it? I'm reminded for my meeting at 5 p.m."
         ],
         "cer_forced": [
-          0.2286,
+          0.3143,
           0.0,
           0.0,
-          0.2,
-          0.1714,
-          0.2857
+          0.0,
+          0.0,
+          0.1714
         ],
         "wer_forced": [
-          0.4545,
+          0.5455,
           0.0,
           0.0,
-          0.4545,
-          0.2727,
-          0.5455
+          0.0,
+          0.0,
+          0.4545
         ],
         "cer_auto": [
-          0.2286,
+          0.3143,
           0.0,
           0.0,
-          0.2,
-          0.1714,
-          0.2857
+          0.0,
+          0.0,
+          0.1714
         ],
         "transcripts_display": [
-          "Can you say it? I remind that for my meeting at 5 p.m.",
-          "Can you set a reminder for my meeting at 5pm?",
+          "Can you say it? I remind you that for my meeting at 5 p.m.",
           "Can you set a reminder for my meeting at 5 p.m.?",
-          "Can you say it? I remind you for my meeting at 5 p.m.",
-          "Can you set or remind that for my meeting at 5 p.m.",
-          "Can you say it or remind that for my meeting at 5 ppm?"
+          "Can you set a reminder for my meeting at 5 p.m.",
+          "Can you set a reminder for my meeting at 5 p.m.",
+          "Can you set a reminder for my meeting at 5 p.m.",
+          "Can you say it? I'm reminded for my meeting at 5 p.m."
         ],
         "cer_display": [
-          0.2286,
+          0.3143,
           0.0,
           0.0,
-          0.2,
-          0.1714,
-          0.2857
+          0.0,
+          0.0,
+          0.1714
         ],
-        "tts_rtf": 0.1764,
-        "stt_ms": 934.7,
+        "tts_rtf": 0.0826,
+        "stt_ms": 512.2,
         "tokens": [
-          17,
-          12,
+          18,
           14,
-          17,
-          15,
-          15
+          14,
+          14,
+          14,
+          17
         ]
       },
       {
@@ -1330,7 +1334,7 @@
         "lang": "hi",
         "text": "Mujhe kal subah 7 baje ka alarm set karna hai.",
         "acoustic_devanagari": "मुझे कल सुबह सात बजे का अलार्म सेट करना है.",
-        "audio_sec": 3.855,
+        "audio_sec": 3.947,
         "lid_detected": [
           "hi",
           "hi",
@@ -1339,79 +1343,87 @@
           "hi",
           "hi"
         ],
+        "stt_model": [
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi"
+        ],
         "lid_p_hi": [
           0.999,
           0.999,
-          0.998,
           0.999,
           0.999,
-          1.0
+          0.999,
+          0.999
         ],
         "transcripts_auto": [
-          "Maji Kalsooba, 7-7 baji ka alarm isaate karna hai",
-          "muji kalsuba, saat bajaka alarm sate karna hai",
-          "Mohjee Kalsuba, Saad Bhajika Alar Maseet",
-          "muji kalsuba 7-7 jika alarm is hate karna hai",
-          "muji kalsuba 7 bajika alarm is 8 karna hai",
-          "muji kalsuba, 7 baji ka alarm isaate karna hai"
+          "मुझे कल सुबा सात बजे का अलार्म सेट करना है",
+          "मुझे कल सुबह सात बजे का अलार्म सेट करना है",
+          "मुझे कल सुबह सात बजे का अलार्म सेट करना है",
+          "मुझे कल सुबह सात बजे का अलार्म सेट करना है",
+          "मुझे कल सुबह सात बजे का अलार्म सेट करना है",
+          "मुझे कल सुबह सात बजे का अलार्म सेट करना है"
         ],
         "transcripts_forced": [
-          "Maji Kalsooba, 7-7 baji ka alarm isaate karna hai",
-          "muji kalsuba, saat bajaka alarm sate karna hai",
-          "Mohjee Kalsuba, Saad Bhajika Alar Maseet",
-          "muji kalsuba 7-7 jika alarm is hate karna hai",
-          "muji kalsuba 7 bajika alarm is 8 karna hai",
-          "muji kalsuba, 7 baji ka alarm isaate karna hai"
+          "मुझे कल सुबा सात बजे का अलार्म सेट करना है",
+          "मुझे कल सुबह सात बजे का अलार्म सेट करना है",
+          "मुझे कल सुबह सात बजे का अलार्म सेट करना है",
+          "मुझे कल सुबह सात बजे का अलार्म सेट करना है",
+          "मुझे कल सुबह सात बजे का अलार्म सेट करना है",
+          "मुझे कल सुबह सात बजे का अलार्म सेट करना है"
         ],
         "cer_forced": [
-          0.3056,
-          0.25,
-          0.5278,
-          0.2778,
-          0.1944,
-          0.2222
-        ],
-        "wer_forced": [
-          0.5,
-          0.7,
-          1.0,
-          0.7,
-          0.7,
-          0.5
-        ],
-        "cer_auto": [
-          0.3056,
-          0.25,
-          0.5278,
-          0.2778,
-          0.1944,
-          0.2222
-        ],
-        "transcripts_display": [
-          "Maji kal subah 7 baje ka alarm set karna hai",
-          "mujhe kal subah saat bajaka alarm set karna hai",
-          "Mujhe kal subah 7 baje ka Alar Maseet",
-          "mujhe kal subah 7 jika alarm is hate karna hai",
-          "mujhe kal subah 7 baje ka alarm is 8 karna hai",
-          "mujhe kal subah 7 baje ka alarm set karna hai"
-        ],
-        "cer_display": [
-          0.0833,
-          0.1389,
-          0.2778,
-          0.1944,
-          0.0833,
+          0.0303,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
           0.0
         ],
-        "tts_rtf": 0.1702,
-        "stt_ms": 960.2,
+        "wer_forced": [
+          0.1,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cer_auto": [
+          0.0303,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "transcripts_display": [
+          "Mujhe kal subah 7 baje ka alarm set karna hai",
+          "Mujhe kal subah 7 baje ka alarm set karna hai",
+          "Mujhe kal subah 7 baje ka alarm set karna hai",
+          "Mujhe kal subah 7 baje ka alarm set karna hai",
+          "Mujhe kal subah 7 baje ka alarm set karna hai",
+          "Mujhe kal subah 7 baje ka alarm set karna hai"
+        ],
+        "cer_display": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tts_rtf": 0.0863,
+        "stt_ms": 998.7,
         "tokens": [
-          19,
-          16,
-          18,
-          16,
-          14,
-          17
+          41,
+          41,
+          41,
+          41,
+          41,
+          41
         ]
       },
       {
@@ -1420,7 +1432,7 @@
         "lang": "hi",
         "text": "Aaj ka schedule kya hai, aur meri next meeting kab hai?",
         "acoustic_devanagari": "आज का शेड्यूल क्या है, और मेरी नेक्स्ट मीटिंग कब है?",
-        "audio_sec": 3.959,
+        "audio_sec": 3.901,
         "lid_detected": [
           "hi",
           "hi",
@@ -1429,79 +1441,87 @@
           "hi",
           "hi"
         ],
+        "stt_model": [
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi"
+        ],
         "lid_p_hi": [
+          0.998,
           1.0,
           0.999,
-          0.999,
-          0.999,
+          1.0,
           0.999,
           0.999
         ],
         "transcripts_auto": [
-          "Today's schedule is our next meeting.",
-          "Today's schedule is our next meeting.",
-          "Today's schedule is our next meeting.",
-          "Today's schedule is our meeting.",
-          "Today's schedule is our meeting of our next meeting.",
-          "Today's schedule is our next meeting."
+          "आज का शिद्धुल क्या है और मेरी नेक्स्टमीटिंग कब है",
+          "आज का शिद्यूल क्या है और मेरी नेक्स्टमीटिंग कब है",
+          "आज का शिड्यूल क्या है और मेरीन एक्स्ड मीटिंग कब है",
+          "आज का शिद्यूल क्या है और मेरीन एक्स्ड मीटिंग कब है",
+          "आज का शिड्यूल क्या है और मेरी नेक्स्ट मीटिंग कब है",
+          "आज का शेड्यूल क्या है और मेरी ने इस्टमीटिंग कब है"
         ],
         "transcripts_forced": [
-          "Today's schedule is our next meeting.",
-          "Today's schedule is our next meeting.",
-          "Today's schedule is our next meeting.",
-          "Today's schedule is our meeting.",
-          "Today's schedule is our meeting of our next meeting.",
-          "Today's schedule is our next meeting."
+          "आज का शिद्धुल क्या है और मेरी नेक्स्टमीटिंग कब है",
+          "आज का शिद्यूल क्या है और मेरी नेक्स्टमीटिंग कब है",
+          "आज का शिड्यूल क्या है और मेरीन एक्स्ड मीटिंग कब है",
+          "आज का शिद्यूल क्या है और मेरीन एक्स्ड मीटिंग कब है",
+          "आज का शिड्यूल क्या है और मेरी नेक्स्ट मीटिंग कब है",
+          "आज का शेड्यूल क्या है और मेरी ने इस्टमीटिंग कब है"
         ],
         "cer_forced": [
-          0.5349,
-          0.5349,
-          0.5349,
-          0.6279,
-          0.6512,
-          0.5349
+          0.1,
+          0.05,
+          0.075,
+          0.1,
+          0.025,
+          0.05
         ],
         "wer_forced": [
-          0.7273,
-          0.7273,
-          0.7273,
-          0.8182,
-          0.8182,
-          0.7273
+          0.2727,
+          0.2727,
+          0.2727,
+          0.2727,
+          0.0909,
+          0.1818
         ],
         "cer_auto": [
-          0.5349,
-          0.5349,
-          0.5349,
-          0.6279,
-          0.6512,
-          0.5349
+          0.1,
+          0.05,
+          0.075,
+          0.1,
+          0.025,
+          0.05
         ],
         "transcripts_display": [
-          "Today's schedule is our next meeting.",
-          "Today's schedule is our next meeting.",
-          "Today's schedule is our next meeting.",
-          "Today's schedule is our meeting.",
-          "Today's schedule is our meeting of our next meeting.",
-          "Today's schedule is our next meeting."
+          "Aaj ka shidhdul kya hai aur meri next meeting kab hai",
+          "Aaj ka shidyool kya hai aur meri next meeting kab hai",
+          "Aaj ka shidyool kya hai aur mereen eksd meeting kab hai",
+          "Aaj ka shidyool kya hai aur mereen eksd meeting kab hai",
+          "Aaj ka shidyool kya hai aur meri next meeting kab hai",
+          "Aaj ka schedule kya hai aur meri ne istamiting kab hai"
         ],
         "cer_display": [
-          0.5349,
-          0.5349,
-          0.5349,
-          0.6279,
-          0.6512,
-          0.5349
+          0.1163,
+          0.1395,
+          0.2558,
+          0.2558,
+          0.1395,
+          0.1163
         ],
-        "tts_rtf": 0.177,
-        "stt_ms": 852.5,
+        "tts_rtf": 0.0856,
+        "stt_ms": 1035.6,
         "tokens": [
-          8,
-          8,
-          8,
-          7,
-          11,
-          8
+          52,
+          51,
+          51,
+          51,
+          51,
+          51
         ]
       },
       {
@@ -1509,8 +1529,8 @@
         "kind": "response",
         "lang": "en",
         "text": "Tomorrow in Bangalore, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
-        "acoustic_devanagari": "टुमारो इन बैंगलोर, एक्सपेक्ट थंडरस्टॉर्म्स विद अ हाई ऑफ़ ट्वेंटी एट डिग्रीज़ ऐंड अ लो ऑफ़ ट्वेंटी डिग्रीज़.",
-        "audio_sec": 7.396,
+        "acoustic_devanagari": "टुमारो इन बैंगलोर, एक्सपेक्ट थंडरस्टॉर्म्स विद अ हाई ऑफ़ ट्वेंटी एईट डिग्रीज़ ऐंड अ लो ऑफ़ ट्वेंटी डिग्रीज़.",
+        "audio_sec": 7.314,
         "lid_detected": [
           "en",
           "en",
@@ -1519,79 +1539,87 @@
           "en",
           "en"
         ],
+        "stt_model": [
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny"
+        ],
         "lid_p_hi": [
-          0.046,
-          0.104,
-          0.092,
-          0.116,
-          0.22,
-          0.084
+          0.13,
+          0.138,
+          0.18,
+          0.12,
+          0.146,
+          0.168
         ],
         "transcripts_auto": [
-          "Tomorrow in Bangalore, expect thunderstorms with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in Bangalore, expect thunderstorms with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in Bangalore, expect a hundred stones with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in Bangalore, expect thunderstorms with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in the game, expect Thunderstorms with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in Bangalore, expect a thunderstorms with a high of 20 degrees and a low of 20 degrees."
+          "Tomorrow in the end, expect the storms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in Bangalore, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in the end, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in Bangalore, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in Bangalore, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in the annual Expectations with a high of 28 degrees and a low of 20 degrees."
         ],
         "transcripts_forced": [
-          "Tomorrow in Bangalore, expect thunderstorms with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in Bangalore, expect thunderstorms with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in Bangalore, expect a hundred stones with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in Bangalore, expect thunderstorms with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in the game, expect Thunderstorms with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in Bangalore, expect a thunderstorms with a high of 20 degrees and a low of 20 degrees."
+          "Tomorrow in the end, expect the storms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in Bangalore, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in the end, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in Bangalore, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in Bangalore, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in the annual Expectations with a high of 28 degrees and a low of 20 degrees."
         ],
         "cer_forced": [
-          0.0132,
-          0.0132,
-          0.0789,
-          0.0132,
-          0.0921,
-          0.0263
+          0.1711,
+          0.0,
+          0.1184,
+          0.0,
+          0.0,
+          0.25
         ],
         "wer_forced": [
-          0.0588,
-          0.0588,
           0.2353,
-          0.0588,
-          0.1765,
-          0.1176
+          0.0,
+          0.1176,
+          0.0,
+          0.0,
+          0.1765
         ],
         "cer_auto": [
-          0.0132,
-          0.0132,
-          0.0789,
-          0.0132,
-          0.0921,
-          0.0263
+          0.1711,
+          0.0,
+          0.1184,
+          0.0,
+          0.0,
+          0.25
         ],
         "transcripts_display": [
-          "Tomorrow in Bangalore, expect thunderstorms with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in Bangalore, expect thunderstorms with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in Bangalore, expect a hundred stones with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in Bangalore, expect thunderstorms with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in the game, expect Thunderstorms with a high of 20 degrees and a low of 20 degrees.",
-          "Tomorrow in Bangalore, expect a thunderstorms with a high of 20 degrees and a low of 20 degrees."
+          "Tomorrow in the end, expect the storms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in Bangalore, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in the end, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in Bangalore, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in Bangalore, expect thunderstorms with a high of 28 degrees and a low of 20 degrees.",
+          "Tomorrow in the annual Expectations with a high of 28 degrees and a low of 20 degrees."
         ],
         "cer_display": [
-          0.0132,
-          0.0132,
-          0.0789,
-          0.0132,
-          0.0921,
-          0.0263
+          0.1711,
+          0.0,
+          0.1184,
+          0.0,
+          0.0,
+          0.25
         ],
-        "tts_rtf": 0.1353,
-        "stt_ms": 930.0,
+        "tts_rtf": 0.0729,
+        "stt_ms": 555.8,
         "tokens": [
+          21,
+          22,
+          21,
           22,
           22,
-          23,
-          22,
-          22,
-          23
+          19
         ]
       },
       {
@@ -1600,7 +1628,7 @@
         "lang": "hi",
         "text": "Kal Bangalore mein baarish ki sambhavna hai, temperature 20 se 28 degree tak rahega.",
         "acoustic_devanagari": "कल बैंगलोर में बारिश की संभावना है, टेम्परेचर बीस से अट्ठाईस डिग्री तक रहेगा.",
-        "audio_sec": 6.281,
+        "audio_sec": 5.851,
         "lid_detected": [
           "hi",
           "hi",
@@ -1609,79 +1637,87 @@
           "hi",
           "hi"
         ],
+        "stt_model": [
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi"
+        ],
         "lid_p_hi": [
-          1.0,
           0.997,
-          0.998,
+          0.996,
           0.999,
           0.996,
-          0.997
+          0.998,
+          0.998
         ],
         "transcripts_auto": [
-          "Kalbang lore is not about the temperature of the temperature of the earth.",
-          "Kalding lord is not a big problem in the world. Temperature is at high degree.",
-          "Kalbang Lord has to be a symbol of the British temperature.",
-          "Kalbang Lord has to be prepared for the next day. Temperature B. And the highest degree will be.",
-          "Kalbang Lord has to understand about the temperature of the earth.",
-          "Kalbang Lord has to be prepared for the next 3 hours."
+          "कल बैंक लोर में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा",
+          "कल बैंगलोर में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा",
+          "कल बैंगलोर में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा",
+          "कल बैंगलोड में बारिश की संभावना है तैंपरिचर बीस से अट्ठाइस डिग्री तक रहेगा",
+          "कल बैंगलोर में बारिश की संभावना है टेंपरेचर बीस से अट्ठाईस डिग्री तक रहेगा",
+          "कल बैंगलोर में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा"
         ],
         "transcripts_forced": [
-          "Kalbang lore is not about the temperature of the temperature of the earth.",
-          "Kalding lord is not a big problem in the world. Temperature is at high degree.",
-          "Kalbang Lord has to be a symbol of the British temperature.",
-          "Kalbang Lord has to be prepared for the next day. Temperature B. And the highest degree will be.",
-          "Kalbang Lord has to understand about the temperature of the earth.",
-          "Kalbang Lord has to be prepared for the next 3 hours."
+          "कल बैंक लोर में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा",
+          "कल बैंगलोर में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा",
+          "कल बैंगलोर में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा",
+          "कल बैंगलोड में बारिश की संभावना है तैंपरिचर बीस से अट्ठाइस डिग्री तक रहेगा",
+          "कल बैंगलोर में बारिश की संभावना है टेंपरेचर बीस से अट्ठाईस डिग्री तक रहेगा",
+          "कल बैंगलोर में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा"
         ],
         "cer_forced": [
-          0.6087,
-          0.6232,
-          0.6522,
-          0.6812,
-          0.5797,
-          0.6957
+          0.0323,
+          0.0161,
+          0.0161,
+          0.1129,
+          0.0323,
+          0.0161
         ],
         "wer_forced": [
-          0.9286,
-          1.0714,
-          1.0,
-          1.1429,
-          0.9286,
-          1.0
+          0.2143,
+          0.0714,
+          0.0714,
+          0.2143,
+          0.0714,
+          0.0714
         ],
         "cer_auto": [
-          0.6087,
-          0.6232,
-          0.6522,
-          0.6812,
-          0.5797,
-          0.6957
+          0.0323,
+          0.0161,
+          0.0161,
+          0.1129,
+          0.0323,
+          0.0161
         ],
         "transcripts_display": [
-          "Kalbang lore is not about the temperature of the temperature of the earth.",
-          "Kalding lord is not a big problem in the world. Temperature is at high degree.",
-          "Kalbang Lord has to be a symbol of the British temperature.",
-          "Kalbang Lord has to be prepared for the next day. Temperature B. And the highest degree will be.",
-          "Kalbang Lord has to understand about the temperature of the earth.",
-          "Kalbang Lord has to be prepared for the next 3 hours."
+          "Kal benk lor mein baarish ki sambhavna hai temparichar 20 se 28 degree tak rahega",
+          "Kal Bangalore mein baarish ki sambhavna hai temparichar 20 se 28 degree tak rahega",
+          "Kal Bangalore mein baarish ki sambhavna hai temparichar 20 se 28 degree tak rahega",
+          "Kal benglod mein baarish ki sambhavna hai tenprichar 20 se 28 degree tak rahega",
+          "Kal Bangalore mein baarish ki sambhavna hai tenprechar 20 se 28 degree tak rahega",
+          "Kal Bangalore mein baarish ki sambhavna hai temparichar 20 se 28 degree tak rahega"
         ],
         "cer_display": [
-          0.6087,
-          0.6232,
-          0.6522,
-          0.6812,
-          0.5797,
-          0.6957
+          0.1449,
+          0.087,
+          0.087,
+          0.1594,
+          0.1014,
+          0.087
         ],
-        "tts_rtf": 0.1518,
-        "stt_ms": 994.9,
+        "tts_rtf": 0.0904,
+        "stt_ms": 1391.9,
         "tokens": [
-          15,
-          19,
-          14,
-          24,
-          14,
-          13
+          81,
+          81,
+          81,
+          81,
+          80,
+          81
         ]
       },
       {
@@ -1690,7 +1726,7 @@
         "lang": "en",
         "text": "Done, I have set a reminder for your meeting at 5 PM.",
         "acoustic_devanagari": "डन, आई हैव सेट अ रिमाइंडर फॉर योर मीटिंग एट फ़ाइव पी एम",
-        "audio_sec": 5.283,
+        "audio_sec": 5.12,
         "lid_detected": [
           "en",
           "en",
@@ -1699,79 +1735,87 @@
           "en",
           "en"
         ],
+        "stt_model": [
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny"
+        ],
         "lid_p_hi": [
-          0.22,
-          0.268,
-          0.318,
-          0.108,
-          0.154,
-          0.109
+          0.343,
+          0.188,
+          0.074,
+          0.1,
+          0.399,
+          0.252
         ],
         "transcripts_auto": [
           "Done. I have set a reminder for your meeting at 5 p.m.",
-          "Done. I have set a reminder for your meeting at 5 p.m.",
           "Then, I have set a reminder for your meeting at 5 p.m.",
+          "Done! I have set a reminder for your meeting at 5 p.m.",
           "Done. I have set a reminder for your meeting at 5 p.m.",
-          "Then, I have set a reminder for your meeting at 5 p.m.",
-          "Done. I have set a reminder for your meeting at 5 p.m."
+          "Done. I have set a reminder for your meeting at 5 p.m.",
+          "Then, I have set a reminder for your meeting at 5pm."
         ],
         "transcripts_forced": [
           "Done. I have set a reminder for your meeting at 5 p.m.",
-          "Done. I have set a reminder for your meeting at 5 p.m.",
           "Then, I have set a reminder for your meeting at 5 p.m.",
+          "Done! I have set a reminder for your meeting at 5 p.m.",
           "Done. I have set a reminder for your meeting at 5 p.m.",
-          "Then, I have set a reminder for your meeting at 5 p.m.",
-          "Done. I have set a reminder for your meeting at 5 p.m."
+          "Done. I have set a reminder for your meeting at 5 p.m.",
+          "Then, I have set a reminder for your meeting at 5pm."
         ],
         "cer_forced": [
           0.0,
-          0.0,
           0.1,
           0.0,
-          0.1,
-          0.0
+          0.0,
+          0.0,
+          0.1
         ],
         "wer_forced": [
           0.0,
-          0.0,
           0.0833,
           0.0,
-          0.0833,
-          0.0
+          0.0,
+          0.0,
+          0.0833
         ],
         "cer_auto": [
           0.0,
-          0.0,
           0.1,
           0.0,
-          0.1,
-          0.0
+          0.0,
+          0.0,
+          0.1
         ],
         "transcripts_display": [
           "Done. I have set a reminder for your meeting at 5 p.m.",
-          "Done. I have set a reminder for your meeting at 5 p.m.",
           "Then, I have set a reminder for your meeting at 5 p.m.",
+          "Done! I have set a reminder for your meeting at 5 p.m.",
           "Done. I have set a reminder for your meeting at 5 p.m.",
-          "Then, I have set a reminder for your meeting at 5 p.m.",
-          "Done. I have set a reminder for your meeting at 5 p.m."
+          "Done. I have set a reminder for your meeting at 5 p.m.",
+          "Then, I have set a reminder for your meeting at 5pm."
         ],
         "cer_display": [
           0.0,
-          0.0,
           0.1,
           0.0,
-          0.1,
-          0.0
+          0.0,
+          0.0,
+          0.1
         ],
-        "tts_rtf": 0.1428,
-        "stt_ms": 841.5,
+        "tts_rtf": 0.0781,
+        "stt_ms": 490.3,
         "tokens": [
           16,
           16,
           16,
           16,
           16,
-          16
+          14
         ]
       },
       {
@@ -1780,7 +1824,7 @@
         "lang": "hi",
         "text": "Theek hai, maine aapki meeting ke liye 5 PM ka reminder set kar diya hai.",
         "acoustic_devanagari": "ठीक है, मैंने आपकी मीटिंग के लिए पाँच पी एम का रिमाइंडर सेट कर दिया है.",
-        "audio_sec": 5.538,
+        "audio_sec": 5.445,
         "lid_detected": [
           "hi",
           "hi",
@@ -1789,6 +1833,14 @@
           "hi",
           "hi"
         ],
+        "stt_model": [
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi"
+        ],
         "lid_p_hi": [
           1.0,
           1.0,
@@ -1798,70 +1850,70 @@
           1.0
         ],
         "transcripts_auto": [
-          "I am going to say that you have made a mistake.",
-          "I am going to say thank you for your meeting.",
-          "I am going to say that you have made a mistake.",
-          "I am going to say that you have made this 5P. I have made this 5P.",
-          "I am going to say that you are going to meet your meeting.",
-          "I am going to say that you have made this 5P for your meeting."
+          "ठीक है मैंने आपकी मीटिंग के लिए पाचपीएम का रिमाइंडरसेट कर दिया है",
+          "ठीक है मैंने आपकी मीटिंग के लिए पाँच पीएम का रिमाइंडर सेट कर दिया है",
+          "ठीक है मैंने आपकी मीटिंग के लिए पाँच पीएम का रिमाण्डरसेट कर दिया है",
+          "ठीक है मैंने आपकी मीटिंग के लिए पाँच पीएम का रिमाइंडर सेट कर दिया है",
+          "ठीक है मैंने आपकी मीतिंग के लिए पाँच पीएम का रिमाइंडरसेट कर दिया है",
+          "ठीक है मैंने आपकी मीटिंग के लिए पाँच पीएम का रिमाण्डर्सेट कर दिया है"
         ],
         "transcripts_forced": [
-          "I am going to say that you have made a mistake.",
-          "I am going to say thank you for your meeting.",
-          "I am going to say that you have made a mistake.",
-          "I am going to say that you have made this 5P. I have made this 5P.",
-          "I am going to say that you are going to meet your meeting.",
-          "I am going to say that you have made this 5P for your meeting."
+          "ठीक है मैंने आपकी मीटिंग के लिए पाचपीएम का रिमाइंडरसेट कर दिया है",
+          "ठीक है मैंने आपकी मीटिंग के लिए पाँच पीएम का रिमाइंडर सेट कर दिया है",
+          "ठीक है मैंने आपकी मीटिंग के लिए पाँच पीएम का रिमाण्डरसेट कर दिया है",
+          "ठीक है मैंने आपकी मीटिंग के लिए पाँच पीएम का रिमाइंडर सेट कर दिया है",
+          "ठीक है मैंने आपकी मीतिंग के लिए पाँच पीएम का रिमाइंडरसेट कर दिया है",
+          "ठीक है मैंने आपकी मीटिंग के लिए पाँच पीएम का रिमाण्डर्सेट कर दिया है"
         ],
         "cer_forced": [
-          0.7895,
-          0.807,
-          0.7895,
-          0.8246,
-          0.8246,
-          0.8421
+          0.0185,
+          0.0,
+          0.037,
+          0.0,
+          0.0185,
+          0.0556
         ],
         "wer_forced": [
-          1.0,
-          1.0,
-          1.0,
-          1.0667,
-          1.0,
-          1.0
+          0.3125,
+          0.125,
+          0.25,
+          0.125,
+          0.3125,
+          0.25
         ],
         "cer_auto": [
-          0.7895,
-          0.807,
-          0.7895,
-          0.8246,
-          0.8246,
-          0.8421
+          0.0185,
+          0.0,
+          0.037,
+          0.0,
+          0.0185,
+          0.0556
         ],
         "transcripts_display": [
-          "I am going to say that you have made a mistake.",
-          "I am going to say thank you for your meeting.",
-          "I am going to say that you have made a mistake.",
-          "I am going to say that you have made this 5P. I have made this 5P.",
-          "I am going to say that you are going to meet your meeting.",
-          "I am going to say that you have made this 5P for your meeting."
+          "Theek hai maine aapki meeting ke liye paachpiem ka reminder set kar diya hai",
+          "Theek hai maine aapki meeting ke liye 5 PM ka reminder set kar diya hai",
+          "Theek hai maine aapki meeting ke liye 5 PM ka rimaandarset kar diya hai",
+          "Theek hai maine aapki meeting ke liye 5 PM ka reminder set kar diya hai",
+          "Theek hai maine aapki meeting ke liye 5 PM ka reminder set kar diya hai",
+          "Theek hai maine aapki meeting ke liye 5 PM ka rimaandarset kar diya hai"
         ],
         "cer_display": [
-          0.7895,
-          0.807,
-          0.7895,
-          0.8246,
-          0.8246,
-          0.8421
+          0.1228,
+          0.0,
+          0.0702,
+          0.0,
+          0.0,
+          0.0702
         ],
-        "tts_rtf": 0.1343,
-        "stt_ms": 789.9,
+        "tts_rtf": 0.0784,
+        "stt_ms": 1174.1,
         "tokens": [
-          12,
-          11,
-          12,
-          20,
-          14,
-          16
+          69,
+          71,
+          71,
+          71,
+          70,
+          72
         ]
       },
       {
@@ -1870,7 +1922,7 @@
         "lang": "en",
         "text": "Your alarm is set for 7 AM tomorrow morning.",
         "acoustic_devanagari": "योर अलार्म इज़ सेट फॉर सेवन ए एम टुमारो मॉर्निंग.",
-        "audio_sec": 4.795,
+        "audio_sec": 4.586,
         "lid_detected": [
           "en",
           "en",
@@ -1879,77 +1931,85 @@
           "en",
           "en"
         ],
+        "stt_model": [
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny"
+        ],
         "lid_p_hi": [
-          0.116,
-          0.059,
-          0.087,
-          0.089,
-          0.031,
-          0.118
+          0.046,
+          0.065,
+          0.035,
+          0.123,
+          0.077,
+          0.131
         ],
         "transcripts_auto": [
-          "You are alarm is set for 7am and tomorrow morning.",
-          "Your alarm is set for 7am and tomorrow morning.",
-          "You are Alam is set for 7 A and tomorrow morning.",
+          "You are alarm is set for 7am, A and tomorrow morning.",
           "You are alarm is set for 7 a and tomorrow morning.",
+          "You are alarm is set for 7am and tomorrow morning.",
+          "You are alarm is set for 7am, A and tomorrow morning.",
           "You are alarm is set for 7 a and tomorrow morning.",
           "You are alarm is set for 7am and tomorrow morning."
         ],
         "transcripts_forced": [
-          "You are alarm is set for 7am and tomorrow morning.",
-          "Your alarm is set for 7am and tomorrow morning.",
-          "You are Alam is set for 7 A and tomorrow morning.",
+          "You are alarm is set for 7am, A and tomorrow morning.",
           "You are alarm is set for 7 a and tomorrow morning.",
+          "You are alarm is set for 7am and tomorrow morning.",
+          "You are alarm is set for 7am, A and tomorrow morning.",
           "You are alarm is set for 7 a and tomorrow morning.",
           "You are alarm is set for 7am and tomorrow morning."
         ],
         "cer_forced": [
-          0.1429,
-          0.0857,
           0.1714,
           0.1429,
+          0.1429,
+          0.1714,
           0.1429,
           0.1429
         ],
         "wer_forced": [
+          0.4444,
+          0.4444,
           0.3333,
-          0.1111,
-          0.5556,
           0.4444,
           0.4444,
           0.3333
         ],
         "cer_auto": [
-          0.1429,
-          0.0857,
           0.1714,
           0.1429,
+          0.1429,
+          0.1714,
           0.1429,
           0.1429
         ],
         "transcripts_display": [
-          "You are alarm is set for 7am and tomorrow morning.",
-          "Your alarm is set for 7am and tomorrow morning.",
-          "You are Alam is set for 7 A and tomorrow morning.",
+          "You are alarm is set for 7am, A and tomorrow morning.",
           "You are alarm is set for 7 a and tomorrow morning.",
+          "You are alarm is set for 7am and tomorrow morning.",
+          "You are alarm is set for 7am, A and tomorrow morning.",
           "You are alarm is set for 7 a and tomorrow morning.",
           "You are alarm is set for 7am and tomorrow morning."
         ],
         "cer_display": [
-          0.1429,
-          0.0857,
           0.1714,
           0.1429,
           0.1429,
+          0.1714,
+          0.1429,
           0.1429
         ],
-        "tts_rtf": 0.169,
-        "stt_ms": 900.0,
+        "tts_rtf": 0.0769,
+        "stt_ms": 500.6,
         "tokens": [
+          14,
           12,
-          11,
-          13,
           12,
+          14,
           12,
           12
         ]
@@ -1960,7 +2020,7 @@
         "lang": "hi",
         "text": "Aapka alarm kal subah 7 baje ke liye set ho gaya hai.",
         "acoustic_devanagari": "आपका अलार्म कल सुबह सात बजे के लिए सेट हो गया है.",
-        "audio_sec": 4.063,
+        "audio_sec": 3.982,
         "lid_detected": [
           "hi",
           "hi",
@@ -1968,6 +2028,14 @@
           "hi",
           "hi",
           "hi"
+        ],
+        "stt_model": [
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi"
         ],
         "lid_p_hi": [
           1.0,
@@ -1978,70 +2046,70 @@
           1.0
         ],
         "transcripts_auto": [
-          "AAPKA ALARM KALS BASAT MAJI KELI SATE HONGI AHE",
-          "A.K.A.R.M.K.S.A.S.A.S.A.S.A",
-          "your alarm keal suba sath budget is set.",
-          "your alarm ke subha sath bha jke li sath hogya hai",
-          "your alarm keal suba sath bha jke li sath hogya hai",
-          "A.K.A.L.R.M.K.S.O.A.S.O.A."
+          "आपका अलार्म कल सुबह सात बजे के लिए सेट हो गया है",
+          "आपका अलार्म कल सुबह सात बजे के लिए सेठ हो गया है",
+          "आँटका अलार्म कल सुबह सात बजे के लिए सेठ हो गया है",
+          "आपका अलार्म कल सुबह सात बजे के लिए सेट हो गया है",
+          "आपका अलाद्म कल सुबह सात बजे के लिए सेट हो गया है",
+          "आपका अलाद्म कल सुबह सात बजे के लिए सेठ हो गया है"
         ],
         "transcripts_forced": [
-          "AAPKA ALARM KALS BASAT MAJI KELI SATE HONGI AHE",
-          "A.K.A.R.M.K.S.A.S.A.S.A.S.A",
-          "your alarm keal suba sath budget is set.",
-          "your alarm ke subha sath bha jke li sath hogya hai",
-          "your alarm keal suba sath bha jke li sath hogya hai",
-          "A.K.A.L.R.M.K.S.O.A.S.O.A."
+          "आपका अलार्म कल सुबह सात बजे के लिए सेट हो गया है",
+          "आपका अलार्म कल सुबह सात बजे के लिए सेठ हो गया है",
+          "आँटका अलार्म कल सुबह सात बजे के लिए सेठ हो गया है",
+          "आपका अलार्म कल सुबह सात बजे के लिए सेट हो गया है",
+          "आपका अलाद्म कल सुबह सात बजे के लिए सेट हो गया है",
+          "आपका अलाद्म कल सुबह सात बजे के लिए सेठ हो गया है"
         ],
         "cer_forced": [
-          0.3659,
-          0.7073,
-          0.6341,
-          0.4634,
-          0.4146,
-          0.7073
+          0.0,
+          0.027,
+          0.0811,
+          0.0,
+          0.027,
+          0.0541
         ],
         "wer_forced": [
-          0.8333,
-          1.1667,
-          0.8333,
-          0.8333,
-          0.8333,
-          1.0833
+          0.0,
+          0.0833,
+          0.1667,
+          0.0,
+          0.0833,
+          0.1667
         ],
         "cer_auto": [
-          0.3659,
-          0.7073,
-          0.6341,
-          0.4634,
-          0.4146,
-          0.7073
+          0.0,
+          0.027,
+          0.0811,
+          0.0,
+          0.027,
+          0.0541
         ],
         "transcripts_display": [
-          "Aapka alarm kals basat maji keli set honge ahe",
-          "A.k.a.r.m.k.s.a.s.a.s.a.s.a",
-          "your alarm keal subah sath budget is set.",
-          "your alarm ke subah sath bha jke li sath ho gaya hai",
-          "your alarm keal subah sath bha jke li sath ho gaya hai",
-          "A.k.a.l.r.m.k.s.o.a.s.o.a."
+          "Aapka alarm kal subah 7 baje ke liye set ho gaya hai",
+          "Aapka alarm kal subah 7 baje ke liye seth ho gaya hai",
+          "Aantka alarm kal subah 7 baje ke liye seth ho gaya hai",
+          "Aapka alarm kal subah 7 baje ke liye set ho gaya hai",
+          "Aapka alaadm kal subah 7 baje ke liye set ho gaya hai",
+          "Aapka alaadm kal subah 7 baje ke liye seth ho gaya hai"
         ],
         "cer_display": [
-          0.3171,
-          0.7073,
-          0.6341,
-          0.4146,
-          0.3902,
-          0.7073
+          0.0,
+          0.0244,
+          0.0732,
+          0.0,
+          0.0488,
+          0.0732
         ],
-        "tts_rtf": 0.1513,
-        "stt_ms": 919.5,
+        "tts_rtf": 0.085,
+        "stt_ms": 1038.0,
         "tokens": [
-          26,
-          27,
-          12,
-          18,
-          19,
-          26
+          48,
+          48,
+          50,
+          48,
+          49,
+          49
         ]
       },
       {
@@ -2050,7 +2118,7 @@
         "lang": "en",
         "text": "Today you have three meetings, and your next one is the lab review at 4:30 PM.",
         "acoustic_devanagari": "टुडे यू हैव थ्री मीटिंग्स, ऐंड योर नेक्स्ट वन इज़ द लैब रिव्यू एट फ़ोर थर्टी पी एम",
-        "audio_sec": 6.2,
+        "audio_sec": 6.13,
         "lid_detected": [
           "en",
           "en",
@@ -2059,79 +2127,87 @@
           "en",
           "en"
         ],
+        "stt_model": [
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny"
+        ],
         "lid_p_hi": [
-          0.147,
-          0.048,
-          0.082,
-          0.102,
-          0.078,
-          0.091
+          0.108,
+          0.069,
+          0.096,
+          0.068,
+          0.035,
+          0.093
         ],
         "transcripts_auto": [
-          "Today you have three meetings and your next one is the Lab Review at 430P M.",
           "Today you have three meetings and your next one is the Lab Review at 430pm.",
-          "Today you have three meetings and your next one is the review at 430p.m",
-          "Today you have three meetings and your next one is the lab review at 430p.m",
+          "Today you have three meetings and your next one is the Lab Review at 430pm.",
           "Today you have three meetings and your next one is the Lab Review at 430p.m",
-          "Today you have three meetings and your next one is the Lab Review at 430p.m"
+          "Today you have three meetings and your next one is the review at 430pm.",
+          "Today you have three meetings and your next one is the level of 3430p.m",
+          "Today you have three meetings and your next one is the Lab Review at 430pm."
         ],
         "transcripts_forced": [
-          "Today you have three meetings and your next one is the Lab Review at 430P M.",
           "Today you have three meetings and your next one is the Lab Review at 430pm.",
-          "Today you have three meetings and your next one is the review at 430p.m",
-          "Today you have three meetings and your next one is the lab review at 430p.m",
+          "Today you have three meetings and your next one is the Lab Review at 430pm.",
           "Today you have three meetings and your next one is the Lab Review at 430p.m",
-          "Today you have three meetings and your next one is the Lab Review at 430p.m"
+          "Today you have three meetings and your next one is the review at 430pm.",
+          "Today you have three meetings and your next one is the level of 3430p.m",
+          "Today you have three meetings and your next one is the Lab Review at 430pm."
         ],
         "cer_forced": [
           0.0,
           0.0,
+          0.0,
           0.0556,
-          0.0,
-          0.0,
+          0.1481,
           0.0
         ],
         "wer_forced": [
-          0.1765,
           0.1176,
-          0.2353,
+          0.1176,
           0.1765,
           0.1765,
-          0.1765
+          0.3529,
+          0.1176
         ],
         "cer_auto": [
           0.0,
           0.0,
+          0.0,
           0.0556,
-          0.0,
-          0.0,
+          0.1481,
           0.0
         ],
         "transcripts_display": [
-          "Today you have three meetings and your next one is the Lab Review at 430P M.",
           "Today you have three meetings and your next one is the Lab Review at 430pm.",
-          "Today you have three meetings and your next one is the review at 430p.m",
-          "Today you have three meetings and your next one is the lab review at 430p.m",
+          "Today you have three meetings and your next one is the Lab Review at 430pm.",
           "Today you have three meetings and your next one is the Lab Review at 430p.m",
-          "Today you have three meetings and your next one is the Lab Review at 430p.m"
+          "Today you have three meetings and your next one is the review at 430pm.",
+          "Today you have three meetings and your next one is the level of 3430p.m",
+          "Today you have three meetings and your next one is the Lab Review at 430pm."
         ],
         "cer_display": [
           0.0,
           0.0,
+          0.0,
           0.0556,
-          0.0,
-          0.0,
+          0.1481,
           0.0
         ],
-        "tts_rtf": 0.139,
-        "stt_ms": 823.3,
+        "tts_rtf": 0.0759,
+        "stt_ms": 530.3,
         "tokens": [
           19,
           19,
+          19,
           18,
-          19,
-          19,
-          19
+          18,
+          18
         ]
       },
       {
@@ -2140,7 +2216,7 @@
         "lang": "hi",
         "text": "Aaj aapki teen meetings hain, aur aapki next meeting 4:30 PM par lab review hai.",
         "acoustic_devanagari": "आज आपकी तीन मीटिंग्स हैं, और आपकी नेक्स्ट मीटिंग साढ़े चार पी एम पर लैब रिव्यू है.",
-        "audio_sec": 6.745,
+        "audio_sec": 6.351,
         "lid_detected": [
           "hi",
           "hi",
@@ -2149,79 +2225,87 @@
           "hi",
           "hi"
         ],
+        "stt_model": [
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi"
+        ],
         "lid_p_hi": [
           0.996,
-          0.995,
-          0.993,
-          0.995,
+          0.997,
           0.996,
-          0.996
+          0.996,
+          0.992,
+          0.997
         ],
         "transcripts_auto": [
-          "Today your three meetings and your next meeting are 4 p.m. lab review.",
-          "Today, your three meetings and your next meeting are 4 P.M.P. Let's review.",
-          "Today, your three meetings and your next meeting, Sari Charpi, Emperor Lab Review.",
-          "Today, your three meetings and your next meeting, Sarhe Charpi, I am a lab review.",
-          "Today, your three meetings and your next meeting are 4-4 P. M.A.Lab Review.",
-          "Today your three meetings and your next meeting, I am PerlabriVu."
+          "आज आपकी तीन मीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार पी एमपरलैब्रिबिव है",
+          "आज आपकी तीन नीटिंग्स हैं और आपकी नक्स्ट मीटिंग साढ़े चार पी एम पर लैबडिव्यू है",
+          "आज आपकी तीन मीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार पी एम्परलैब रिव्यू है",
+          "आज आपकी तीन मीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार्ज़ पी एम पर लैबव्रिव्यू है",
+          "आज आपकी तीन मीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार पी एम पर लैब रिव्यू है",
+          "आज आपकी तीन मीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार पी एमपर लैब रिव्यू है"
         ],
         "transcripts_forced": [
-          "Today your three meetings and your next meeting are 4 p.m. lab review.",
-          "Today, your three meetings and your next meeting are 4 P.M.P. Let's review.",
-          "Today, your three meetings and your next meeting, Sari Charpi, Emperor Lab Review.",
-          "Today, your three meetings and your next meeting, Sarhe Charpi, I am a lab review.",
-          "Today, your three meetings and your next meeting are 4-4 P. M.A.Lab Review.",
-          "Today your three meetings and your next meeting, I am PerlabriVu."
+          "आज आपकी तीन मीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार पी एमपरलैब्रिबिव है",
+          "आज आपकी तीन नीटिंग्स हैं और आपकी नक्स्ट मीटिंग साढ़े चार पी एम पर लैबडिव्यू है",
+          "आज आपकी तीन मीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार पी एम्परलैब रिव्यू है",
+          "आज आपकी तीन मीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार्ज़ पी एम पर लैबव्रिव्यू है",
+          "आज आपकी तीन मीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार पी एम पर लैब रिव्यू है",
+          "आज आपकी तीन मीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार पी एमपर लैब रिव्यू है"
         ],
         "cer_forced": [
-          0.4921,
-          0.5238,
-          0.5873,
-          0.5873,
-          0.4921,
-          0.5238
+          0.0794,
+          0.0476,
+          0.0159,
+          0.0635,
+          0.0,
+          0.0
         ],
         "wer_forced": [
-          0.625,
-          0.75,
-          0.6875,
-          0.75,
-          0.75,
-          0.8125
+          0.2353,
+          0.2353,
+          0.1765,
+          0.1765,
+          0.0,
+          0.1176
         ],
         "cer_auto": [
-          0.4921,
-          0.5238,
-          0.5873,
-          0.5873,
-          0.4921,
-          0.5238
+          0.0794,
+          0.0476,
+          0.0159,
+          0.0635,
+          0.0,
+          0.0
         ],
         "transcripts_display": [
-          "Today your three meetings and your next meeting are 4 p.m. lab review.",
-          "Today, your three meetings and your next meeting are 4 P.M.P. Let's review.",
-          "Today, your three meetings and your next meeting, Sari Charpi, Emperor Lab Review.",
-          "Today, your three meetings and your next meeting, Sarhe Charpi, I am a lab review.",
-          "Today, your three meetings and your next meeting are 4 P. M.A.Lab Review.",
-          "Today your three meetings and your next meeting, I am PerlabriVu."
+          "Aaj aapki teen meetings hain aur aapki next meeting saadhe char pi emaparlaibribiv hai",
+          "Aaj aapki teen nitings hain aur aapki nakst meeting saarhe 4 PM par laibdivyu hai",
+          "Aaj aapki teen meetings hain aur aapki next meeting saarhe char pi emparlaib review hai",
+          "Aaj aapki teen meetings hain aur aapki next meeting saarhe chaarz PM par laibavrivyu hai",
+          "Aaj aapki teen meetings hain aur aapki next meeting saarhe 4 PM par lab review hai",
+          "Aaj aapki teen meetings hain aur aapki next meeting saadhe char pi emapar lab review hai"
         ],
         "cer_display": [
-          0.4921,
-          0.5238,
-          0.5873,
-          0.5873,
-          0.4762,
-          0.5238
+          0.2857,
+          0.3016,
+          0.2063,
+          0.3016,
+          0.1111,
+          0.2063
         ],
-        "tts_rtf": 0.1388,
-        "stt_ms": 903.1,
+        "tts_rtf": 0.0723,
+        "stt_ms": 1289.0,
         "tokens": [
-          17,
-          21,
-          20,
-          22,
-          23,
-          18
+          87,
+          87,
+          87,
+          94,
+          87,
+          89
         ]
       },
       {
@@ -2230,7 +2314,7 @@
         "lang": "hi",
         "text": "Kal shaam 6 baje meeting ka reminder laga do.",
         "acoustic_devanagari": "कल शाम छह बजे मीटिंग का रिमाइंडर लगा दो.",
-        "audio_sec": 3.855,
+        "audio_sec": 3.878,
         "lid_detected": [
           "hi",
           "hi",
@@ -2239,79 +2323,87 @@
           "hi",
           "hi"
         ],
+        "stt_model": [
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi"
+        ],
         "lid_p_hi": [
+          0.992,
+          0.993,
           0.995,
           0.988,
-          0.997,
-          0.997,
           0.99,
-          0.974
+          0.995
         ],
         "transcripts_auto": [
-          "kar sham chae bha ji, mi ting ka remandar laga do",
-          "Kar Shahan Chhebadeh meeting the reminder.",
-          "Kalsham chae badee meeting karimandalaga",
-          "ka sham chae bha ji, mi tinkar emander laga, do",
-          "kar shant hai baji, mi tinkar emander laga",
-          "Kalsham Shabaji, meet in karimandar laga."
+          "कल शाम छह बजे मीटिंग का रिमाण्डर लगा दो",
+          "कल शाम छह बजे मीटिंग का रिमाडल लगा दो",
+          "कल शाम छह बजे मीटिंग का दिमांडल लगा दो",
+          "कर शाम छह बजे मीटिंग का रिमाइंडल लगा दो",
+          "कल शाम छह बजे मीटिंग का रिमाडल लगा दो",
+          "कर शाम छह बजे मींतिंग का रिमाडल लगा दो"
         ],
         "transcripts_forced": [
-          "kar sham chae bha ji, mi ting ka remandar laga do",
-          "Kar Shahan Chhebadeh meeting the reminder.",
-          "Kalsham chae badee meeting karimandalaga",
-          "ka sham chae bha ji, mi tinkar emander laga, do",
-          "kar shant hai baji, mi tinkar emander laga",
-          "Kalsham Shabaji, meet in karimandar laga."
+          "कल शाम छह बजे मीटिंग का रिमाण्डर लगा दो",
+          "कल शाम छह बजे मीटिंग का रिमाडल लगा दो",
+          "कल शाम छह बजे मीटिंग का दिमांडल लगा दो",
+          "कर शाम छह बजे मीटिंग का रिमाइंडल लगा दो",
+          "कल शाम छह बजे मीटिंग का रिमाडल लगा दो",
+          "कर शाम छह बजे मींतिंग का रिमाडल लगा दो"
         ],
         "cer_forced": [
-          0.3333,
-          0.5,
-          0.3611,
-          0.3333,
-          0.3611,
-          0.3056
+          0.0645,
+          0.0968,
+          0.0968,
+          0.0645,
+          0.0968,
+          0.1935
         ],
         "wer_forced": [
-          0.8889,
-          0.7778,
-          0.8889,
-          0.8889,
-          0.8889,
-          0.8889
+          0.1111,
+          0.1111,
+          0.1111,
+          0.2222,
+          0.1111,
+          0.3333
         ],
         "cer_auto": [
-          0.3333,
-          0.5,
-          0.3611,
-          0.3333,
-          0.3611,
-          0.3056
+          0.0645,
+          0.0968,
+          0.0968,
+          0.0645,
+          0.0968,
+          0.1935
         ],
         "transcripts_display": [
-          "kar shaam chae bha ji, meeting ka remandar laga do",
-          "Kar Shahan Chhebadeh meeting the reminder.",
-          "Kal shaam chae badee meeting karimandalaga",
-          "ka shaam chae bha ji, mi tinkar emander laga, do",
-          "kar shant hai baje, mi tinkar emander laga",
-          "Kal shaam Shabaji, meet in karimandar laga."
+          "Kal shaam 6 baje meeting ka rimaandar laga do",
+          "Kal shaam 6 baje meeting ka rimaadal laga do",
+          "Kal shaam 6 baje meeting ka dimandal laga do",
+          "Kar shaam 6 baje meeting ka rimaaindal laga do",
+          "Kal shaam 6 baje meeting ka rimaadal laga do",
+          "Kar shaam 6 baje minting ka rimaadal laga do"
         ],
         "cer_display": [
-          0.25,
-          0.5,
-          0.3333,
-          0.3056,
-          0.3333,
-          0.2778
+          0.1111,
+          0.1389,
+          0.1389,
+          0.1667,
+          0.1389,
+          0.2222
         ],
-        "tts_rtf": 0.1975,
-        "stt_ms": 1066.6,
+        "tts_rtf": 0.0851,
+        "stt_ms": 1019.3,
         "tokens": [
-          18,
-          12,
-          14,
-          19,
-          15,
-          16
+          43,
+          40,
+          41,
+          43,
+          40,
+          40
         ]
       },
       {
@@ -2320,7 +2412,7 @@
         "lang": "hi",
         "text": "Parson subah 8 baje ka alarm set kar do.",
         "acoustic_devanagari": "परसों सुबह आठ बजे का अलार्म सेट कर दो.",
-        "audio_sec": 3.367,
+        "audio_sec": 3.39,
         "lid_detected": [
           "hi",
           "hi",
@@ -2329,79 +2421,87 @@
           "hi",
           "hi"
         ],
+        "stt_model": [
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi"
+        ],
         "lid_p_hi": [
-          0.982,
-          0.972,
-          0.985,
-          0.956,
-          0.973,
-          0.965
+          0.98,
+          0.987,
+          0.988,
+          0.992,
+          0.992,
+          0.977
         ],
         "transcripts_auto": [
-          "Perseusaba 8 bajaya alarm is 8 kar 2",
-          "Persu subha 8 bajika alarm sate ka 2",
-          "Parasu Subha 8.5.Alarm Sade kar 2.",
-          "Super Sai Baba 8.5.8.5.8.8.8.8",
-          "Perseusuba 8.5.8.8.",
-          "Super Sai Baba 8.5.8.8.8.8"
+          "पर सो सुबह आठ बजे का अलार्म सेट कर दो",
+          "पर सो सुबह आठ बजे का अलार्म सेट कर दो",
+          "पर सो सुबह आठ बजे का अलार्म सेट कर दो",
+          "पर सो सुबह आठ बजे का अलार्म सेट कर दो",
+          "पर सो सुबह आठ बजे का अलार्म सेठ कर दो",
+          "पर सो सुबह आठ बजे का अलार्म सेट कर दो"
         ],
         "transcripts_forced": [
-          "Perseusaba 8 bajaya alarm is 8 kar 2",
-          "Persu subha 8 bajika alarm sate ka 2",
-          "Parasu Subha 8.5.Alarm Sade kar 2.",
-          "Super Sai Baba 8.5.8.5.8.8.8.8",
-          "Perseusuba 8.5.8.8.",
-          "Super Sai Baba 8.5.8.8.8.8"
+          "पर सो सुबह आठ बजे का अलार्म सेट कर दो",
+          "पर सो सुबह आठ बजे का अलार्म सेट कर दो",
+          "पर सो सुबह आठ बजे का अलार्म सेट कर दो",
+          "पर सो सुबह आठ बजे का अलार्म सेट कर दो",
+          "पर सो सुबह आठ बजे का अलार्म सेठ कर दो",
+          "पर सो सुबह आठ बजे का अलार्म सेट कर दो"
         ],
         "cer_forced": [
-          0.3871,
-          0.3548,
-          0.4839,
-          0.8387,
-          0.7419,
-          0.8387
+          0.0345,
+          0.0345,
+          0.0345,
+          0.0345,
+          0.069,
+          0.0345
         ],
         "wer_forced": [
-          0.7778,
-          0.7778,
-          0.6667,
-          1.1111,
-          0.8889,
-          1.0
+          0.2222,
+          0.2222,
+          0.2222,
+          0.2222,
+          0.3333,
+          0.2222
         ],
         "cer_auto": [
-          0.3871,
-          0.3548,
-          0.4839,
-          0.8387,
-          0.7419,
-          0.8387
+          0.0345,
+          0.0345,
+          0.0345,
+          0.0345,
+          0.069,
+          0.0345
         ],
         "transcripts_display": [
-          "Perseusaba 8 bajaya alarm is 8 kar 2",
-          "Persu subah 8 baje ka alarm set ka 2",
-          "Parasu subah 8.5.Alarm saadhe kar 2.",
-          "Super Sai Baba 8.5.8.5.8.8.8.8",
-          "Perseusuba 8.5.8.8.",
-          "Super Sai Baba 8.5.8.8.8.8"
+          "Par so subah 8 baje ka alarm set kar do",
+          "Par so subah 8 baje ka alarm set kar do",
+          "Par so subah 8 baje ka alarm set kar do",
+          "Par so subah 8 baje ka alarm set kar do",
+          "Par so subah 8 baje ka alarm seth kar do",
+          "Par so subah 8 baje ka alarm set kar do"
         ],
         "cer_display": [
-          0.3871,
-          0.1935,
-          0.5161,
-          0.8387,
-          0.7419,
-          0.8387
+          0.0323,
+          0.0323,
+          0.0323,
+          0.0323,
+          0.0645,
+          0.0323
         ],
-        "tts_rtf": 0.1654,
-        "stt_ms": 854.7,
+        "tts_rtf": 0.0841,
+        "stt_ms": 941.7,
         "tokens": [
-          12,
-          12,
-          17,
-          18,
-          12,
-          14
+          38,
+          38,
+          38,
+          38,
+          38,
+          38
         ]
       },
       {
@@ -2410,7 +2510,7 @@
         "lang": "hi",
         "text": "Kya kal Bangalore mein baarish hogi?",
         "acoustic_devanagari": "क्या कल बैंगलोर में बारिश होगी?",
-        "audio_sec": 2.566,
+        "audio_sec": 2.635,
         "lid_detected": [
           "hi",
           "hi",
@@ -2419,79 +2519,87 @@
           "hi",
           "hi"
         ],
+        "stt_model": [
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi"
+        ],
         "lid_p_hi": [
-          0.999,
           1.0,
           0.999,
-          1.0,
           0.999,
+          0.999,
+          1.0,
           1.0
         ],
         "transcripts_auto": [
-          "Keakal Bangalore me barishogi",
-          "Kyaakal Bangalore on Baresh Hogi",
-          "Keakel Banglor mein barish hogi",
-          "Kehakal Bangalore, Baarish Hogi",
-          "Keaakal Banglor med barish hogi",
-          "Keaakal, Ben Lord May Bhari Shogi"
+          "क्या कल बैनलोर में बारिश होगी",
+          "क्या कल बैंगलोद में बारिश होगी",
+          "क्या कल बैंनलोर में बारिश होगी",
+          "क्या कल बैंगलोर में बारिश होगी",
+          "क्या कल बैंगलोद में बादेश होगी",
+          "क्या कल बैंगलोर में बारिश होगी"
         ],
         "transcripts_forced": [
-          "Keakal Bangalore me barishogi",
-          "Kyaakal Bangalore on Baresh Hogi",
-          "Keakel Banglor mein barish hogi",
-          "Kehakal Bangalore, Baarish Hogi",
-          "Keaakal Banglor med barish hogi",
-          "Keaakal, Ben Lord May Bhari Shogi"
+          "क्या कल बैनलोर में बारिश होगी",
+          "क्या कल बैंगलोद में बारिश होगी",
+          "क्या कल बैंनलोर में बारिश होगी",
+          "क्या कल बैंगलोर में बारिश होगी",
+          "क्या कल बैंगलोद में बादेश होगी",
+          "क्या कल बैंगलोर में बारिश होगी"
         ],
         "cer_forced": [
-          0.1667,
-          0.2,
-          0.1667,
-          0.2,
-          0.2333,
-          0.3667
+          0.08,
+          0.04,
+          0.04,
+          0.0,
+          0.12,
+          0.0
         ],
         "wer_forced": [
-          0.8333,
-          0.6667,
-          0.6667,
-          0.5,
-          0.8333,
-          1.0
+          0.1667,
+          0.1667,
+          0.1667,
+          0.0,
+          0.3333,
+          0.0
         ],
         "cer_auto": [
-          0.1667,
-          0.2,
-          0.1667,
-          0.2,
-          0.2333,
-          0.3667
+          0.08,
+          0.04,
+          0.04,
+          0.0,
+          0.12,
+          0.0
         ],
         "transcripts_display": [
-          "Keakal Bangalore me barishogi",
-          "Kya kal Bangalore on Baresh Hogi",
-          "Keakel Bangalore mein barish hogi",
-          "Kehakal Bangalore, Baarish Hogi",
-          "Keaakal Bangalore med barish hogi",
-          "Keaakal, Ben Lord May Bhari Shogi"
+          "Kya kal bainlor mein baarish hogi",
+          "Kya kal benglod mein baarish hogi",
+          "Kya kal bennlor mein baarish hogi",
+          "Kya kal Bangalore mein baarish hogi",
+          "Kya kal benglod mein baadesh hogi",
+          "Kya kal Bangalore mein baarish hogi"
         ],
         "cer_display": [
-          0.1667,
-          0.1667,
-          0.1,
+          0.1333,
+          0.1333,
+          0.1333,
+          0.0,
           0.2,
-          0.1667,
-          0.3667
+          0.0
         ],
-        "tts_rtf": 0.2157,
-        "stt_ms": 1005.8,
+        "tts_rtf": 0.1077,
+        "stt_ms": 1001.0,
         "tokens": [
-          10,
-          12,
-          10,
-          13,
-          11,
-          12
+          28,
+          31,
+          29,
+          30,
+          32,
+          30
         ]
       },
       {
@@ -2500,7 +2608,7 @@
         "lang": "hi",
         "text": "Meri agli meeting kitne baje hai?",
         "acoustic_devanagari": "मेरी अगली मीटिंग कितने बजे है?",
-        "audio_sec": 2.67,
+        "audio_sec": 2.519,
         "lid_detected": [
           "hi",
           "hi",
@@ -2509,79 +2617,87 @@
           "hi",
           "hi"
         ],
+        "stt_model": [
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi"
+        ],
         "lid_p_hi": [
+          0.998,
+          0.998,
           0.999,
-          0.998,
-          1.0,
-          0.998,
-          0.998,
+          0.999,
+          0.999,
           0.999
         ],
         "transcripts_auto": [
-          "My ugly meeting is so much better than this.",
-          "My ugly meeting is in the middle of the day.",
-          "My ugly meeting is so much fun.",
-          "My ugly meeting is so big",
-          "My ugly meeting is so much fun.",
-          "My early meeting is in the morning."
+          "मेरी अगली मीटिंग कितने बजे हैं",
+          "मेरी अगली मीटिंग कितने बजे है",
+          "मेरी अगली मीटिंग कितने बजे हैं",
+          "मेरी अगली मीटिंग कितने बजे है",
+          "मेरी अडली मीटिंग कितने बजे हैं",
+          "मेरी अडली मीटिंग कितने बजे हैं"
         ],
         "transcripts_forced": [
-          "My ugly meeting is so much better than this.",
-          "My ugly meeting is in the middle of the day.",
-          "My ugly meeting is so much fun.",
-          "My ugly meeting is so big",
-          "My ugly meeting is so much fun.",
-          "My early meeting is in the morning."
+          "मेरी अगली मीटिंग कितने बजे हैं",
+          "मेरी अगली मीटिंग कितने बजे है",
+          "मेरी अगली मीटिंग कितने बजे हैं",
+          "मेरी अगली मीटिंग कितने बजे है",
+          "मेरी अडली मीटिंग कितने बजे हैं",
+          "मेरी अडली मीटिंग कितने बजे हैं"
         ],
         "cer_forced": [
-          0.8148,
-          0.7407,
-          0.5926,
-          0.5556,
-          0.5926,
-          0.5926
+          0.0417,
+          0.0,
+          0.0417,
+          0.0,
+          0.0833,
+          0.0833
         ],
         "wer_forced": [
-          1.3333,
-          1.5,
-          1.0,
-          0.8333,
-          1.0,
-          1.0
+          0.1667,
+          0.0,
+          0.1667,
+          0.0,
+          0.3333,
+          0.3333
         ],
         "cer_auto": [
-          0.8148,
-          0.7407,
-          0.5926,
-          0.5556,
-          0.5926,
-          0.5926
+          0.0417,
+          0.0,
+          0.0417,
+          0.0,
+          0.0833,
+          0.0833
         ],
         "transcripts_display": [
-          "My ugly meeting is so much better than this.",
-          "My ugly meeting is in the middle of the day.",
-          "My ugly meeting is so much fun.",
-          "My ugly meeting is so big",
-          "My ugly meeting is so much fun.",
-          "My early meeting is in the morning."
+          "Meri agli meeting kitne baje hain",
+          "Meri agli meeting kitne baje hai",
+          "Meri agli meeting kitne baje hain",
+          "Meri agli meeting kitne baje hai",
+          "Meri adli meeting kitne baje hain",
+          "Meri adli meeting kitne baje hain"
         ],
         "cer_display": [
-          0.8148,
-          0.7407,
-          0.5926,
-          0.5556,
-          0.5926,
-          0.5926
+          0.037,
+          0.0,
+          0.037,
+          0.0,
+          0.0741,
+          0.0741
         ],
-        "tts_rtf": 0.1697,
-        "stt_ms": 889.6,
+        "tts_rtf": 0.0936,
+        "stt_ms": 917.6,
         "tokens": [
-          10,
-          11,
-          8,
-          6,
-          8,
-          8
+          31,
+          30,
+          31,
+          30,
+          31,
+          31
         ]
       },
       {
@@ -2590,7 +2706,7 @@
         "lang": "hi",
         "text": "Aaj shaam ka mausam kaisa rahega?",
         "acoustic_devanagari": "आज शाम का मौसम कैसा रहेगा?",
-        "audio_sec": 2.856,
+        "audio_sec": 2.786,
         "lid_detected": [
           "hi",
           "hi",
@@ -2599,79 +2715,87 @@
           "hi",
           "hi"
         ],
+        "stt_model": [
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi"
+        ],
         "lid_p_hi": [
-          0.995,
           0.998,
-          0.999,
-          0.998,
+          0.992,
+          0.986,
           0.997,
+          0.983,
           0.995
         ],
         "transcripts_auto": [
-          "Today, I am a Muslim, kaisar higa",
-          "Today, Sharm Kamosam kaisar haiga",
-          "Today, we will have a chance to meet you.",
-          "Today, I am a Muslim. How will it be?",
-          "Today, we shall have a good time.",
-          "Today, Shankam awesome! What is this?"
+          "आज शाम का मौसम कैसा रहेगा",
+          "आज शाम का मौसम कैसा रहेगा",
+          "आज शाम का मौसम कैसा रहेगा",
+          "आज शाम का मौसम कैसा रहेगा",
+          "आज शाम का मौसम कैसर हेगा",
+          "आज शाम का मौसम कैसर हेगा"
         ],
         "transcripts_forced": [
-          "Today, I am a Muslim, kaisar higa",
-          "Today, Sharm Kamosam kaisar haiga",
-          "Today, we will have a chance to meet you.",
-          "Today, I am a Muslim. How will it be?",
-          "Today, we shall have a good time.",
-          "Today, Shankam awesome! What is this?"
+          "आज शाम का मौसम कैसा रहेगा",
+          "आज शाम का मौसम कैसा रहेगा",
+          "आज शाम का मौसम कैसा रहेगा",
+          "आज शाम का मौसम कैसा रहेगा",
+          "आज शाम का मौसम कैसर हेगा",
+          "आज शाम का मौसम कैसर हेगा"
         ],
         "cer_forced": [
-          0.4444,
-          0.3704,
-          1.0,
-          0.7778,
-          0.8889,
-          0.7037
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.05,
+          0.05
         ],
         "wer_forced": [
-          1.1667,
-          1.0,
-          1.5,
-          1.5,
-          1.1667,
-          1.0
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.3333,
+          0.3333
         ],
         "cer_auto": [
-          0.4444,
-          0.3704,
-          1.0,
-          0.7778,
-          0.8889,
-          0.7037
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.05,
+          0.05
         ],
         "transcripts_display": [
-          "Today, I am a Muslim, kaisar higa",
-          "Today, Sharm Kamosam kaisar haiga",
-          "Today, we will have a chance to meet you.",
-          "Today, I am a Muslim. How will it be?",
-          "Today, we shall have a good time.",
-          "Today, Shankam awesome! What is this?"
+          "Aaj shaam ka mausam kaisa rahega",
+          "Aaj shaam ka mausam kaisa rahega",
+          "Aaj shaam ka mausam kaisa rahega",
+          "Aaj shaam ka mausam kaisa rahega",
+          "Aaj shaam ka mausam kaisar hega",
+          "Aaj shaam ka mausam kaisar hega"
         ],
         "cer_display": [
-          0.4444,
-          0.3704,
-          1.0,
-          0.7778,
-          0.8889,
-          0.7037
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.037,
+          0.037
         ],
-        "tts_rtf": 0.179,
-        "stt_ms": 894.9,
+        "tts_rtf": 0.1058,
+        "stt_ms": 909.3,
         "tokens": [
-          12,
-          12,
-          11,
-          12,
-          9,
-          10
+          26,
+          26,
+          26,
+          26,
+          24,
+          24
         ]
       },
       {
@@ -2680,86 +2804,94 @@
         "lang": "en",
         "text": "Wake me up at 6:30 AM tomorrow.",
         "acoustic_devanagari": "वेक मी अप एट सिक्स थर्टी ए एम टुमारो.",
-        "audio_sec": 3.506,
+        "audio_sec": 3.495,
         "lid_detected": [
           "hi",
           "hi",
           "hi",
           "hi",
-          "en",
+          "hi",
           "hi"
         ],
+        "stt_model": [
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi",
+          "whisper-tiny-hi"
+        ],
         "lid_p_hi": [
-          0.902,
-          0.979,
-          0.771,
-          0.951,
-          0.491,
-          0.863
+          0.981,
+          0.898,
+          0.977,
+          0.844,
+          0.919,
+          0.975
         ],
         "transcripts_auto": [
-          "Wake me up 830 AM tomorrow.",
-          "Wake me up at 6.30 a.n. 2.",
-          "Wake me up at 6.30 a.m. tomorrow.",
-          "Wake me up at 6.30 a.m. tomorrow.",
-          "Wake me up at 6.30 a.m. tomorrow.",
-          "Wake me up at 630a nth maro"
+          "वेह एक नीं अब एफसिक्स थर्टी ए एन तुमारो",
+          "वेक नी अब एटसिक स्थल टी ए एन तुमारो",
+          "वेक नीं अब एटसिक स्थल टीए एम तुमारो",
+          "वेक नीं अब एटसिक्स थर्टी ए एन तुमारो",
+          "वेक नी अब एफसिक्स थर्टी ए एन तुमारो",
+          "वेक नी अब एट सिक्स थर्टी ए एन तुम्हारो"
         ],
         "transcripts_forced": [
-          "Wake me up at 830 AM tomorrow.",
+          "Wake me up at 6.30 a.m.",
+          "Wake me up at 6.30 a.m. tomorrow.",
+          "Wake me up at 6.30 a.m. tomorrow.",
+          "Wake me up at 6.30 a.m.",
           "Wake me up at 6.30 a.n. tomorrow.",
-          "Wake me up at 6.30 a.m. tomorrow.",
-          "Wake me up at 6.30 a.m. tomorrow.",
-          "Wake me up at 6.30 a.m. tomorrow.",
-          "Wake me up at 6.30 a.m. tomorrow."
+          "Wake me up at 6.30 a.n. tomorrow."
         ],
         "cer_forced": [
+          0.3478,
+          0.0,
+          0.0,
+          0.3478,
           0.0435,
-          0.0435,
-          0.0,
-          0.0,
-          0.0,
-          0.0
+          0.0435
         ],
         "wer_forced": [
+          0.125,
+          0.0,
+          0.0,
+          0.125,
           0.25,
-          0.25,
-          0.0,
-          0.0,
-          0.0,
-          0.0
+          0.25
         ],
         "cer_auto": [
-          0.1304,
-          0.3913,
-          0.0,
-          0.0,
-          0.0,
-          0.2174
+          0.2857,
+          0.2857,
+          0.2857,
+          0.1786,
+          0.1786,
+          0.2143
         ],
         "transcripts_display": [
-          "Wake me up 830 AM tomorrow.",
-          "Wake me up at 6.30 a.n. 2.",
-          "Wake me up at 6.30 a.m. tomorrow.",
-          "Wake me up at 6.30 a.m. tomorrow.",
-          "Wake me up at 6.30 a.m. tomorrow.",
-          "Wake me up at 630a nth maro"
+          "Veh ek nin ab ephsiks tharti e en tumaaro",
+          "Vek ni ab etsik sthal ti e en tumaaro",
+          "Vek nin ab etsik sthal tei em tumaaro",
+          "Vek nin ab etsiks tharti e en tumaaro",
+          "Vek ni ab ephsiks tharti e en tumaaro",
+          "Vek ni ab at siks tharti e en tumhaaro"
         ],
         "cer_display": [
-          0.1304,
-          0.3913,
-          0.0,
-          0.0,
-          0.0,
-          0.2174
+          1.1739,
+          1.0,
+          1.0,
+          1.0435,
+          1.0435,
+          1.0435
         ],
-        "tts_rtf": 0.1823,
-        "stt_ms": 929.7,
+        "tts_rtf": 0.085,
+        "stt_ms": 807.9,
         "tokens": [
-          9,
+          11,
           13,
           13,
-          13,
+          11,
           13,
           13
         ]
@@ -2770,49 +2902,57 @@
         "lang": "en",
         "text": "What time is my next meeting today?",
         "acoustic_devanagari": "व्हाट टाइम इज़ माय नेक्स्ट मीटिंग टुडे?",
-        "audio_sec": 3.402,
+        "audio_sec": 3.216,
         "lid_detected": [
           "en",
           "en",
           "en",
-          "hi",
+          "en",
           "en",
           "en"
         ],
+        "stt_model": [
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny"
+        ],
         "lid_p_hi": [
-          0.254,
-          0.165,
-          0.352,
-          0.624,
-          0.296,
-          0.229
+          0.19,
+          0.275,
+          0.41,
+          0.183,
+          0.248,
+          0.089
         ],
         "transcripts_auto": [
-          "But, time is my next meeting today.",
           "What time is my next meeting today?",
           "What time is my next meeting today?",
-          "Bhaar time is my next meeting today.",
+          "What time is my next meeting today?",
+          "But time is my next meeting today.",
           "What time is my next meeting today?",
           "What time is my next meeting today?"
         ],
         "transcripts_forced": [
-          "But, time is my next meeting today.",
           "What time is my next meeting today?",
           "What time is my next meeting today?",
-          "Varthe time is my next meeting today.",
+          "What time is my next meeting today?",
+          "But time is my next meeting today.",
           "What time is my next meeting today?",
           "What time is my next meeting today?"
         ],
         "cer_forced": [
+          0.0,
+          0.0,
+          0.0,
           0.1071,
-          0.0,
-          0.0,
-          0.1786,
           0.0,
           0.0
         ],
         "wer_forced": [
-          0.1429,
+          0.0,
           0.0,
           0.0,
           0.1429,
@@ -2820,7 +2960,7 @@
           0.0
         ],
         "cer_auto": [
-          0.1071,
+          0.0,
           0.0,
           0.0,
           0.1071,
@@ -2828,28 +2968,28 @@
           0.0
         ],
         "transcripts_display": [
-          "But, time is my next meeting today.",
           "What time is my next meeting today?",
           "What time is my next meeting today?",
-          "Bhaar time is my next meeting today.",
+          "What time is my next meeting today?",
+          "But time is my next meeting today.",
           "What time is my next meeting today?",
           "What time is my next meeting today?"
         ],
         "cer_display": [
-          0.1071,
+          0.0,
           0.0,
           0.0,
           0.1071,
           0.0,
           0.0
         ],
-        "tts_rtf": 0.1664,
-        "stt_ms": 849.6,
+        "tts_rtf": 0.0858,
+        "stt_ms": 469.7,
         "tokens": [
-          9,
           8,
           8,
-          9,
+          8,
+          8,
           8,
           8
         ]
@@ -2860,7 +3000,7 @@
         "lang": "en",
         "text": "Remind me to call the lab at 3 PM.",
         "acoustic_devanagari": "रीमाइंड मी टू कॉल द लैब एट थ्री पी एम",
-        "audio_sec": 3.286,
+        "audio_sec": 3.413,
         "lid_detected": [
           "en",
           "en",
@@ -2869,83 +3009,90 @@
           "en",
           "en"
         ],
+        "stt_model": [
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny",
+          "whisper-tiny"
+        ],
         "lid_p_hi": [
-          0.039,
-          0.05,
-          0.032,
-          0.061,
-          0.011,
-          0.041
+          0.043,
+          0.045,
+          0.067,
+          0.026,
+          0.041,
+          0.019
         ],
         "transcripts_auto": [
-          "Remind me to call the lab at 3pm.",
           "Remind me to call the lab at TPM.",
-          "Remind me to call the lab at TPM.",
+          "Remind me to call the lab at 3 p.m.",
           "Remind me to call the lab at 3pm.",
+          "Remind me to call the lab at 3 p.m.",
           "Remind me to call the lab at TPM.",
           "Remind me to call the lab at TPM."
         ],
         "transcripts_forced": [
-          "Remind me to call the lab at 3pm.",
           "Remind me to call the lab at TPM.",
-          "Remind me to call the lab at TPM.",
+          "Remind me to call the lab at 3 p.m.",
           "Remind me to call the lab at 3pm.",
+          "Remind me to call the lab at 3 p.m.",
           "Remind me to call the lab at TPM.",
           "Remind me to call the lab at TPM."
         ],
         "cer_forced": [
+          0.04,
           0.0,
-          0.04,
-          0.04,
+          0.0,
           0.0,
           0.04,
           0.04
         ],
         "wer_forced": [
+          0.2222,
           0.0,
-          0.2222,
-          0.2222,
+          0.0,
           0.0,
           0.2222,
           0.2222
         ],
         "cer_auto": [
+          0.04,
           0.0,
-          0.04,
-          0.04,
+          0.0,
           0.0,
           0.04,
           0.04
         ],
         "transcripts_display": [
-          "Remind me to call the lab at 3pm.",
           "Remind me to call the lab at TPM.",
-          "Remind me to call the lab at TPM.",
+          "Remind me to call the lab at 3 p.m.",
           "Remind me to call the lab at 3pm.",
+          "Remind me to call the lab at 3 p.m.",
           "Remind me to call the lab at TPM.",
           "Remind me to call the lab at TPM."
         ],
         "cer_display": [
+          0.04,
           0.0,
-          0.04,
-          0.04,
+          0.0,
           0.0,
           0.04,
           0.04
         ],
-        "tts_rtf": 0.1488,
-        "stt_ms": 806.0,
+        "tts_rtf": 0.0882,
+        "stt_ms": 513.1,
         "tokens": [
           11,
+          13,
           11,
-          11,
-          12,
+          13,
           11,
           11
         ]
       }
-    ],
-    "display_rescored_at": "2026-10-18T16:37:00+00:00"
+    ]
   },
   "llm_benchmark": {
     "generated_at": "2026-10-18T11:58:38+00:00",
@@ -4284,6 +4431,1035 @@
       "am_pm": "a spaced 'P. M.' was cut by the clause splitter into 'five P' + pause + 'M'; now never split; 'P. M.'/'p.m.' -> 'PM' before TTS",
       "stt": "Whisper non-speech output rejected (counting runs, stretched sounds, <4 letters in a chip turn); chip turns continue with the labelled prompt text, excluded from WER; invalid clock minutes near a time word -> spoken hour (repeated-digit minutes read as the stuttered number)",
       "ui": "top-bar title single line (maxLines 1, softWrap false), compact chips, model chip capped at 132 dp"
+    }
+  },
+  "hindi_asr_eval": {
+    "generated_at": "2026-10-18T22:10:42+00:00",
+    "method": "app-identical decoding (C++ log-Mel, KV-cached greedy, forced <|hi|>, app masks); FLEURS hi_in test first 100 sentence ids (real read speech, CC-BY-4.0) + closed-loop Hindi/Hinglish commands x 3 seeded VITS samples; native = Devanagari CER/WER; display = Roman CER/WER after the app's Kotlin displayTranscript on hypothesis and reference; host Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz, onnxruntime 1.31.0, 4 threads",
+    "models": {
+      "shipped_tiny_int8": {
+        "size_mb": 71.4,
+        "files": [
+          "vaani_stt_encoder.int8.onnx",
+          "vaani_stt_decoder.int8.onnx",
+          "vaani_stt_decoder_with_past.int8.onnx"
+        ],
+        "encoder_ms_median": 486.2,
+        "decoder_ms_per_step_median": 15.77,
+        "fleurs": {
+          "n": 100,
+          "display_cer": 0.7303,
+          "display_wer": 1.0183,
+          "native_cer": 1.0423,
+          "native_wer": 1.0496,
+          "step0_lid_hi_pct": 96.0
+        },
+        "corpus": {
+          "n": 18,
+          "display_cer": 0.5486,
+          "display_wer": 0.7819
+        },
+        "heldout": {
+          "n": 15,
+          "display_cer": 0.5398,
+          "display_wer": 0.9074
+        },
+        "samples": {
+          "fleurs-1660": {
+            "raw": "खाई पाई पाई पाई प",
+            "display": "Khaai paai pa"
+          },
+          "fleurs-1661": {
+            "raw": "खादन के पादन के पादन के पादन के प",
+            "display": "Khaadan ke paadan ke paadan ke paadan ke pa"
+          },
+          "fleurs-1665": {
+            "raw": "4th kyaanu saad, dasa wai sima viwaat ko sander bit curry Rajo for the 16th-19th-19th kyaanu saad.",
+            "display": "4th kyaanu saad, dasa wai sima viwaat ko sander bit curry Rajo for the 16th-19th-19th kyaanu saad."
+          },
+          "P3#0": {
+            "raw": "Mujee Kalsuba, Saat Bhaji ka Allahar mistakekarna hai",
+            "display": "Mujhe kal subah 7 baje ka Allahar mistakekarna hai"
+          },
+          "P4#0": {
+            "raw": "Today's schedule is our next meeting.",
+            "display": "Today's schedule is our next meeting."
+          },
+          "R1-hi#0": {
+            "raw": "Kalbhang lord has to be a competition at high degree.",
+            "display": "Kalbhang lord has to be a competition at high degree."
+          },
+          "R2-hi#0": {
+            "raw": "I am going to demonstrate your meeting.",
+            "display": "I am going to demonstrate your meeting."
+          },
+          "R3-hi#0": {
+            "raw": "A.K.A.A.A.A",
+            "display": "A.k.a.a.a.a"
+          },
+          "R4-hi#0": {
+            "raw": "Today your three meetings and your next meeting are 4 P. I am a lab review.",
+            "display": "Today your three meetings and your next meeting are 4 P. I am a lab review."
+          },
+          "H1-hi#0": {
+            "raw": "Kar Shaham Chai Bhaji, Meet in the remandal of the year.",
+            "display": "Kar Shaham Chai baje, Meet in the remandal of the year."
+          },
+          "H2-hi#0": {
+            "raw": "Parasso Baba 8-8 bajika alarm 8-8 kar 2",
+            "display": "Parasso Baba 8 baje ka alarm 8 kar 2"
+          },
+          "H3-hi#0": {
+            "raw": "Kehakal Bangalore",
+            "display": "Kehakal Bangalore"
+          },
+          "H4-hi#0": {
+            "raw": "My ugly meat in the kitchen is so big",
+            "display": "My ugly meat in the kitchen is so big"
+          },
+          "H5-hi#0": {
+            "raw": "आप पप पप पप प",
+            "display": "Aap pap pa"
+          }
+        }
+      },
+      "artpark_tiny_hi_int8": {
+        "size_mb": 71.3,
+        "files": [
+          "encoder_model.int8.onnx",
+          "decoder_model.int8.onnx",
+          "decoder_with_past_model.int8.onnx"
+        ],
+        "encoder_ms_median": 513.4,
+        "decoder_ms_per_step_median": 12.64,
+        "fleurs": {
+          "n": 100,
+          "display_cer": 0.2354,
+          "display_wer": 0.432,
+          "native_cer": 0.2569,
+          "native_wer": 0.429,
+          "step0_lid_hi_pct": 100.0
+        },
+        "corpus": {
+          "n": 18,
+          "display_cer": 0.1516,
+          "display_wer": 0.1678
+        },
+        "heldout": {
+          "n": 15,
+          "display_cer": 0.0814,
+          "display_wer": 0.163
+        },
+        "samples": {
+          "fleurs-1660": {
+            "raw": "मैं न्यूनानी अब न्यूनानी अब न्यूनानी जो गोई थी फिजते और लेकल जैसे लेकिन कोशिश लिया गया",
+            "display": "Main nyoonaani ab nyoonaani ab nyoonaani jo goi thi phijte aur lekal jaise lekin koshish liya gaya"
+          },
+          "fleurs-1661": {
+            "raw": "यह कहते हुए वह चीन के आर्थिक उत्पादन के आधार पर बनाए जाएंगे उन्होंने कटौती के लिए कोई आँखला निर्धालित नहीं किया",
+            "display": "Yah kahate hue wah cheen ke aarthik utpaadan ke aadhaar par banaae jaaenge unhonne katauti ke liye koi aankhla nirdhaalit nahi kiya"
+          },
+          "fleurs-1665": {
+            "raw": "लेक के अनुसार दस्तावेज सीमा विभाग को संदर्भित करेगा जो फिलिस तीन नाइनिटीजीजीजीज",
+            "display": "Lek ke anusaar dastaavej seema vibhaag ko sandarbhit karega jo philis teen naainitijeejijeej"
+          },
+          "P3#0": {
+            "raw": "मुझे कल सुबह साथ बजे का अलाद मसेट करना है",
+            "display": "Mujhe kal subah 7 baje ka alaad maset karna hai"
+          },
+          "P4#0": {
+            "raw": "आज का शिडुल क्या है और मेरी नेक्स्ट ब्रुडिंग कब है",
+            "display": "Aaj ka shidul kya hai aur meri next bruding kab hai"
+          },
+          "R1-hi#0": {
+            "raw": "कल बैंक लोड में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा",
+            "display": "Kal benk lod mein baarish ki sambhavna hai temparichar 20 se 28 degree tak rahega"
+          },
+          "R2-hi#0": {
+            "raw": "ठीक है मैंने आपकी मीटिंग के लिए पाचपी एम का रिमाइंडर सेट कर दिया है",
+            "display": "Theek hai maine aapki meeting ke liye paachpi em ka reminder set kar diya hai"
+          },
+          "R3-hi#0": {
+            "raw": "आपका अलार्म कल सुबह सात बजे के लिए सेट हो गया है",
+            "display": "Aapka alarm kal subah 7 baje ke liye set ho gaya hai"
+          },
+          "R4-hi#0": {
+            "raw": "आज आपकी तीन मीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साठ रिचार्पीएम पर लैब रीब्यू है",
+            "display": "Aaj aapki teen meetings hain aur aapki next meeting saath richaarpiem par lab reebyu hai"
+          },
+          "H1-hi#0": {
+            "raw": "कर शाम छह बजे मीटिंग का रिमाडल लगा दो",
+            "display": "Kar shaam 6 baje meeting ka rimaadal laga do"
+          },
+          "H2-hi#0": {
+            "raw": "पर सो सुबह आठ बजे का अलार्म सेट कर दो",
+            "display": "Par so subah 8 baje ka alarm set kar do"
+          },
+          "H3-hi#0": {
+            "raw": "क्या कल बैंगलोर में बारिश होगी",
+            "display": "Kya kal Bangalore mein baarish hogi"
+          },
+          "H4-hi#0": {
+            "raw": "मेरी अविलीमीटिंग कितने बजे है",
+            "display": "Meri avileemiting kitne baje hai"
+          },
+          "H5-hi#0": {
+            "raw": "आज शाम का मौसम कैसा रहेगा",
+            "display": "Aaj shaam ka mausam kaisa rahega"
+          }
+        }
+      },
+      "artpark_tiny_hi_fp32": {
+        "size_mb": 424.2,
+        "files": [
+          "encoder_model.onnx",
+          "decoder_model.onnx",
+          "decoder_with_past_model.onnx"
+        ],
+        "encoder_ms_median": 421.6,
+        "decoder_ms_per_step_median": 16.4,
+        "fleurs": {
+          "n": 100,
+          "display_cer": 0.129,
+          "display_wer": 0.2774,
+          "native_cer": 0.1411,
+          "native_wer": 0.2729,
+          "step0_lid_hi_pct": 100.0
+        },
+        "corpus": {
+          "n": 18,
+          "display_cer": 0.1029,
+          "display_wer": 0.1319
+        },
+        "heldout": {
+          "n": 15,
+          "display_cer": 0.0703,
+          "display_wer": 0.2037
+        },
+        "samples": {
+          "fleurs-1660": {
+            "raw": "रुमानियत में सांस्कृतिक नियतिवाद का बड़ा महत्वथान जो गोई थे फिचते और स्लेगल जैसे लेखको से लिया गया",
+            "display": "Rumaaniyat mein sanskritik niytivaad ka bara mahatvathaan jo goi the phichte aur slegal jaise lekhko se liya gaya"
+          },
+          "fleurs-1661": {
+            "raw": "यह कहते हुए वे चीन के आर्थिक उत्पादन के आधार पर बनाए जाएंगे उन्होंने कटौती के लिए कोई आंकड़ा निर्धारित नहीं किया",
+            "display": "Yah kahate hue ve cheen ke aarthik utpaadan ke aadhaar par banaae jaaenge unhonne katauti ke liye koi aankra nirdhaarit nahi kiya"
+          },
+          "fleurs-1665": {
+            "raw": "लिख के अनुसार दस्तावेज़ सीमा विवाद को संदर्भित करेगा जो फिलस्थिंग नाइन्टीन चित्री सेवन के मध्यपुर व्युत से पहले सीमाओं के आधार पर चाहता है",
+            "display": "Likh ke anusaar dastaavez seema vivaad ko sandarbhit karega jo philasthing naainteen chitri sevan ke madhyapur vyut se pehle simaaon ke aadhaar par chaahata hai"
+          },
+          "P3#0": {
+            "raw": "मुझे कल सुबह सात बजे का अलाद में सेट करना है",
+            "display": "Mujhe kal subah 7 baje ka alaad mein set karna hai"
+          },
+          "P4#0": {
+            "raw": "आज का शेड्यूल क्या है और मेरी नेक्स्टमीटिंग कब है",
+            "display": "Aaj ka schedule kya hai aur meri next meeting kab hai"
+          },
+          "R1-hi#0": {
+            "raw": "कल बैंक लोर में बारिश की संभावना है टेम्परेचर बीस से अट्ठाईस डिग्री तक रहेगा",
+            "display": "Kal benk lor mein baarish ki sambhavna hai temperature 20 se 28 degree tak rahega"
+          },
+          "R2-hi#0": {
+            "raw": "ठीक है मैंने आपकी मीटिंग के लिए पाँच पी एम का रिमाण्डर्सेट कर दिया है",
+            "display": "Theek hai maine aapki meeting ke liye 5 PM ka rimaandarset kar diya hai"
+          },
+          "R3-hi#0": {
+            "raw": "आपका अलार्म कल सुबह सात बजे के लिए सेठ हो गया है",
+            "display": "Aapka alarm kal subah 7 baje ke liye seth ho gaya hai"
+          },
+          "R4-hi#0": {
+            "raw": "आज आपकी तीन मीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साठे चार पी एम्पल्लैब रिव्यू है",
+            "display": "Aaj aapki teen meetings hain aur aapki next meeting saathe char pi empallaib review hai"
+          },
+          "H1-hi#0": {
+            "raw": "कर शाम छह बजे मीं टिंका रिमाइंडर लगा दो",
+            "display": "Kar shaam 6 baje min tinka reminder laga do"
+          },
+          "H2-hi#0": {
+            "raw": "पर सो सुबह आठ बजे का अलार्म सेठ कर दो",
+            "display": "Par so subah 8 baje ka alarm seth kar do"
+          },
+          "H3-hi#0": {
+            "raw": "क्या कल बैंगलोर में बारिश होगी",
+            "display": "Kya kal Bangalore mein baarish hogi"
+          },
+          "H4-hi#0": {
+            "raw": "मेरी अगली मीटिंग कितने बजे हैं",
+            "display": "Meri agli meeting kitne baje hain"
+          },
+          "H5-hi#0": {
+            "raw": "आज शाम का मौसम कैसा रहेगा",
+            "display": "Aaj shaam ka mausam kaisa rahega"
+          }
+        }
+      },
+      "oriserve_base_hinglish_fp32": {
+        "size_mb": 698.7,
+        "files": [
+          "encoder_model.onnx",
+          "decoder_model.onnx",
+          "decoder_with_past_model.onnx"
+        ],
+        "encoder_ms_median": 903.0,
+        "decoder_ms_per_step_median": 28.75,
+        "fleurs": {
+          "n": 100,
+          "display_cer": 0.1732,
+          "display_wer": 0.3965,
+          "native_cer": 1.2145,
+          "native_wer": 1.0411,
+          "step0_lid_hi_pct": 0.0
+        },
+        "corpus": {
+          "n": 18,
+          "display_cer": 0.1098,
+          "display_wer": 0.1657
+        },
+        "heldout": {
+          "n": 15,
+          "display_cer": 0.0306,
+          "display_wer": 0.0926
+        },
+        "samples": {
+          "fleurs-1660": {
+            "raw": "Rumaany niyat mein saanskrtik niyativaad ka bada mahatv tha. Jo goi the, phichate aur us lekin jaise lekhako se liya gaya.",
+            "display": "Rumaany niyat mein saanskrtik niyativaad ka bada mahatv tha. Jo goi the, phichate aur us lekin jaise lekhako se liya gaya."
+          },
+          "fleurs-1661": {
+            "raw": "Yahaan kahte hue ve chin ke aarthik utpaadan ke aadhaar par banae jaenge. Unhonne katauti ke lie koi aankada nirdhaarit nahin kiya.",
+            "display": "Yahan kahte hue ve chin ke aarthik utpaadan ke aadhaar par banae jaenge. Unhonne katauti ke lie koi aankada nirdhaarit nahin kiya."
+          },
+          "fleurs-1665": {
+            "raw": "Likh ke anusaar dastaavez sima vivaad ko sandarbhit karega jo phir tin 19 37 ke maadhyapoorn vah yuddh se pahle simaon ke aadhaar par chaahta hai.",
+            "display": "Likh ke anusaar dastaavez sima vivaad ko sandarbhit karega jo phir tin 19 37 ke maadhyapoorn vah yuddh se pahle simaon ke aadhaar par chhata hai."
+          },
+          "P3#0": {
+            "raw": "Mujhe kal subah saat baje ka alarm set karna hai.",
+            "display": "Mujhe kal subah 7 baje ka alarm set karna hai."
+          },
+          "P4#0": {
+            "raw": "Aaj ka schedule kya hai aur meri next meeting kab hai?",
+            "display": "Aaj ka schedule kya hai aur meri next meeting kab hai?"
+          },
+          "R1-hi#0": {
+            "raw": "Kal bank loan mein baarish ki sambhaavna hai temperature bis se atthais degree tak rahega.",
+            "display": "Kal bank loan mein baarish ki sambhavna hai temperature bis se atthais degree tak rahega."
+          },
+          "R2-hi#0": {
+            "raw": "Thik hai, mainne aapki meeting ke lie paanch bhi m ka reminder set kar diya hai.",
+            "display": "Thik hai, maine aapki meeting ke lie paanch bhi m ka reminder set kar diya hai."
+          },
+          "R3-hi#0": {
+            "raw": "Aapka alarm kal subah saat baje ke lie set ho gaya hai.",
+            "display": "Aapka alarm kal subah 7 baje ke lie set ho gaya hai."
+          },
+          "R4-hi#0": {
+            "raw": "Aaj aapki tin meetings hain aur aapki next meeting saadhe chaar PM par lab review hai.",
+            "display": "Aaj aapki tin meetings hain aur aapki next meeting saadhe chaar PM par lab review hai."
+          },
+          "H1-hi#0": {
+            "raw": "Kal shaam chhah baje meeting ka reminder laga do.",
+            "display": "Kal shaam 6 baje meeting ka reminder laga do."
+          },
+          "H2-hi#0": {
+            "raw": "Parson subah aath baje ka alarm set kar do.",
+            "display": "Parson subah 8 baje ka alarm set kar do."
+          },
+          "H3-hi#0": {
+            "raw": "Kya kal baingalor mein baarish hogi?",
+            "display": "Kya kal baingalor mein baarish hogi?"
+          },
+          "H4-hi#0": {
+            "raw": "Meri aglimiting kitne baje hain?",
+            "display": "Meri aglimiting kitne baje hain?"
+          },
+          "H5-hi#0": {
+            "raw": "Aaj shaam ka mausam kaisa rahega?",
+            "display": "Aaj shaam ka mausam kaisa rahega?"
+          }
+        }
+      }
+    }
+  },
+  "hindi_asr_precision_ablation": {
+    "generated_at": "2026-10-18T22:19:11+00:00",
+    "method": "app-identical decoding (C++ log-Mel, KV-cached greedy, forced <|hi|>, app masks); FLEURS hi_in test first 40 sentence ids (real read speech, CC-BY-4.0) + closed-loop Hindi/Hinglish commands x 1 seeded VITS samples; native = Devanagari CER/WER; display = Roman CER/WER after the app's Kotlin displayTranscript on hypothesis and reference; host Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz, onnxruntime 1.31.0, 4 threads",
+    "models": {
+      "int8enc_int8dec": {
+        "size_mb": 71.3,
+        "files": [
+          "encoder_model.int8.onnx",
+          "decoder_model.int8.onnx",
+          "decoder_with_past_model.int8.onnx"
+        ],
+        "encoder_ms_median": 321.8,
+        "decoder_ms_per_step_median": 8.94,
+        "fleurs": {
+          "n": 40,
+          "display_cer": 0.2407,
+          "display_wer": 0.4261,
+          "native_cer": 0.2579,
+          "native_wer": 0.4151,
+          "step0_lid_hi_pct": 100.0
+        },
+        "corpus": {
+          "n": 6,
+          "display_cer": 0.15,
+          "display_wer": 0.1764
+        },
+        "heldout": {
+          "n": 5,
+          "display_cer": 0.1045,
+          "display_wer": 0.1667
+        },
+        "samples": {
+          "fleurs-1660": {
+            "raw": "मैं न्यूनानी अब न्यूनानी अब न्यूनानी जो गोई थी फिजते और लेकल जैसे लेकिन कोशिश लिया गया",
+            "display": "Main nyoonaani ab nyoonaani ab nyoonaani jo goi thi phijte aur lekal jaise lekin koshish liya gaya"
+          },
+          "fleurs-1661": {
+            "raw": "यह कहते हुए वह चीन के आर्थिक उत्पादन के आधार पर बनाए जाएंगे उन्होंने कटौती के लिए कोई आँखला निर्धालित नहीं किया",
+            "display": "Yah kahate hue wah cheen ke aarthik utpaadan ke aadhaar par banaae jaaenge unhonne katauti ke liye koi aankhla nirdhaalit nahi kiya"
+          },
+          "fleurs-1665": {
+            "raw": "लेक के अनुसार दस्तावेज सीमा विभाग को संदर्भित करेगा जो फिलिस तीन नाइनिटीजीजीजीज",
+            "display": "Lek ke anusaar dastaavej seema vibhaag ko sandarbhit karega jo philis teen naainitijeejijeej"
+          },
+          "P3#0": {
+            "raw": "मुझे कल सुबह साथ बजे का अलाद मसेट करना है",
+            "display": "Mujhe kal subah 7 baje ka alaad maset karna hai"
+          },
+          "P4#0": {
+            "raw": "आज का ड्यूल क्या है और मेरी नेक्स्ट मीटिंग कब है",
+            "display": "Aaj ka dyool kya hai aur meri next meeting kab hai"
+          },
+          "R1-hi#0": {
+            "raw": "कल बैंगलोर में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा",
+            "display": "Kal Bangalore mein baarish ki sambhavna hai temparichar 20 se 28 degree tak rahega"
+          },
+          "R2-hi#0": {
+            "raw": "ठीक है मैंने आपकी मीटिंग के लिए पाचपीएम का रिमाइंडर सेट कर दिया है",
+            "display": "Theek hai maine aapki meeting ke liye paachpiem ka reminder set kar diya hai"
+          },
+          "R3-hi#0": {
+            "raw": "आपका अलार्म कल सुबह सात बजे के लिए सेट हो गया है",
+            "display": "Aapka alarm kal subah 7 baje ke liye set ho gaya hai"
+          },
+          "R4-hi#0": {
+            "raw": "आज आपकी तीन नीटिंग्स हैं और आपकी नीटिंग सारे चार पी एमप्रेलेब्रिब्यू है",
+            "display": "Aaj aapki teen nitings hain aur aapki niting saare char pi emaprelebribyu hai"
+          },
+          "H1-hi#0": {
+            "raw": "कल शाम छह बजे मीटिंग का निमाइन्डर लगा दो",
+            "display": "Kal shaam 6 baje meeting ka nimaaindar laga do"
+          },
+          "H2-hi#0": {
+            "raw": "परिसोशुभा आठ बजे का अलार्म सेट कर दो",
+            "display": "Parisoshubha 8 baje ka alarm set kar do"
+          },
+          "H3-hi#0": {
+            "raw": "क्या कल बैंगलोर में बारिश होगी",
+            "display": "Kya kal Bangalore mein baarish hogi"
+          },
+          "H4-hi#0": {
+            "raw": "मेरी अविलीमीटिंग कितने बजे हैं",
+            "display": "Meri avileemiting kitne baje hain"
+          },
+          "H5-hi#0": {
+            "raw": "आज शाम का मौसम कैसा रहेगा",
+            "display": "Aaj shaam ka mausam kaisa rahega"
+          }
+        }
+      },
+      "fp32enc_int8dec": {
+        "size_mb": 92.5,
+        "files": [
+          "encoder_model.onnx",
+          "decoder_model.int8.onnx",
+          "decoder_with_past_model.int8.onnx"
+        ],
+        "encoder_ms_median": 323.4,
+        "decoder_ms_per_step_median": 7.12,
+        "fleurs": {
+          "n": 40,
+          "display_cer": 0.1238,
+          "display_wer": 0.2859,
+          "native_cer": 0.1329,
+          "native_wer": 0.2811,
+          "step0_lid_hi_pct": 100.0
+        },
+        "corpus": {
+          "n": 6,
+          "display_cer": 0.1163,
+          "display_wer": 0.1348
+        },
+        "heldout": {
+          "n": 5,
+          "display_cer": 0.0435,
+          "display_wer": 0.1667
+        },
+        "samples": {
+          "fleurs-1660": {
+            "raw": "युमानीयत में सांस्कृतिक नियतिवाद का बड़ा महत्ववादाम जो गोई थे फिचते और स्लेगल जैसे लेखको से लिया गया",
+            "display": "Yumaaneeyat mein sanskritik niytivaad ka bara mahatvavaadaam jo goi the phichte aur slegal jaise lekhko se liya gaya"
+          },
+          "fleurs-1661": {
+            "raw": "यह कहते हुए वे चीन के आर्थिक उत्पादन के आधार पर बनाए जाएंगे उन्होंने कटौती के लिए कोई आंकड़ा निर्धालित नहीं किया",
+            "display": "Yah kahate hue ve cheen ke aarthik utpaadan ke aadhaar par banaae jaaenge unhonne katauti ke liye koi aankra nirdhaalit nahi kiya"
+          },
+          "fleurs-1665": {
+            "raw": "लिख के अनुसार दस्तावेज़ सीमा विवाद को संदर्भित करेगा जो फिलस्थीन नेंटी जीत्री सेवन के मध्यपुर वियुद्ध से पहले सीमा के आधार पर जाता है",
+            "display": "Likh ke anusaar dastaavez seema vivaad ko sandarbhit karega jo philastheen nenti jeetri sevan ke madhyapur viyudhd se pehle seema ke aadhaar par jaata hai"
+          },
+          "P3#0": {
+            "raw": "मुझे कल सुबह साथ बजे का अलार्म सेट करना है",
+            "display": "Mujhe kal subah 7 baje ka alarm set karna hai"
+          },
+          "P4#0": {
+            "raw": "आज का शिड्यूल क्या है और मेरी नेक्स्टमीटिंग कब है",
+            "display": "Aaj ka shidyool kya hai aur meri next meeting kab hai"
+          },
+          "R1-hi#0": {
+            "raw": "कल बैंग्लोर में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा",
+            "display": "Kal benglor mein baarish ki sambhavna hai temparichar 20 se 28 degree tak rahega"
+          },
+          "R2-hi#0": {
+            "raw": "ठीक है मैंने आपकी मीटिंग के लिए पाच पीएम का रिमाण्डरसेट कर दिया है",
+            "display": "Theek hai maine aapki meeting ke liye paach PM ka rimaandarset kar diya hai"
+          },
+          "R3-hi#0": {
+            "raw": "आपका अलार्म कल सुबह सात बजे के लिए सेट हो गया है",
+            "display": "Aapka alarm kal subah 7 baje ke liye set ho gaya hai"
+          },
+          "R4-hi#0": {
+            "raw": "आज आपकी तीन नीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार पी एमपरलैब रिव्यू है",
+            "display": "Aaj aapki teen nitings hain aur aapki next meeting saadhe char pi emaparlaib review hai"
+          },
+          "H1-hi#0": {
+            "raw": "कल शाम छह बजे मीटिंग का निमांडर लगा दो",
+            "display": "Kal shaam 6 baje meeting ka nimandar laga do"
+          },
+          "H2-hi#0": {
+            "raw": "पर सो सुबह आठ बजे का अलार्म सेट कर दो",
+            "display": "Par so subah 8 baje ka alarm set kar do"
+          },
+          "H3-hi#0": {
+            "raw": "क्या कल बैंगलोर में बारिश होगी",
+            "display": "Kya kal Bangalore mein baarish hogi"
+          },
+          "H4-hi#0": {
+            "raw": "मेरी अगली मीटिंग कितने बजे हैं",
+            "display": "Meri agli meeting kitne baje hain"
+          },
+          "H5-hi#0": {
+            "raw": "आज शाम का मौसम कैसर हेगा",
+            "display": "Aaj shaam ka mausam kaisar hega"
+          }
+        }
+      },
+      "int8enc_fp32dec": {
+        "size_mb": 403.0,
+        "files": [
+          "encoder_model.int8.onnx",
+          "decoder_model.onnx",
+          "decoder_with_past_model.onnx"
+        ],
+        "encoder_ms_median": 290.8,
+        "decoder_ms_per_step_median": 11.63,
+        "fleurs": {
+          "n": 40,
+          "display_cer": 0.1934,
+          "display_wer": 0.3742,
+          "native_cer": 0.217,
+          "native_wer": 0.3649,
+          "step0_lid_hi_pct": 100.0
+        },
+        "corpus": {
+          "n": 6,
+          "display_cer": 0.1657,
+          "display_wer": 0.2111
+        },
+        "heldout": {
+          "n": 5,
+          "display_cer": 0.0545,
+          "display_wer": 0.1
+        },
+        "samples": {
+          "fleurs-1660": {
+            "raw": "मैं नियत में सांस्कृतिक नियत इवाद का बड़ा महत्वपूर्ण जो गोई थी फिज्जते और लेकल जैसे लेकिन कोशिश लिया गया",
+            "display": "Main niyat mein sanskritik niyat ivaad ka bara mahatvapoorn jo goi thi phijjate aur lekal jaise lekin koshish liya gaya"
+          },
+          "fleurs-1661": {
+            "raw": "यह कहते हुए चीन के आर्थिक उत्पादन के आधार पर बनाए जाएँगे उन्होंने कटौती के लिए कोई आँखिरा निर्धारित नहीं किया",
+            "display": "Yah kahate hue cheen ke aarthik utpaadan ke aadhaar par banaae jaaenge unhonne katauti ke liye koi aankhira nirdhaarit nahi kiya"
+          },
+          "fleurs-1665": {
+            "raw": "लेक के अनुसार दस्तावेज़ सीमा विभाग को संदर्भित करेगा जो फिल्स थीन नाइनिंग जबूर वगैरह दूसरे पहले सीमाओं के आधार पर जाता है",
+            "display": "Lek ke anusaar dastaavez seema vibhaag ko sandarbhit karega jo phils teen naaining jaboor vagairah doosri pehle simaaon ke aadhaar par jaata hai"
+          },
+          "P3#0": {
+            "raw": "मुझे कल सुबह सात बजे का अलाद मिसेट करना है",
+            "display": "Mujhe kal subah 7 baje ka alaad miset karna hai"
+          },
+          "P4#0": {
+            "raw": "आज का शिड्यूल क्या है और मेरी नेक्स्ट मीटिंग कब है",
+            "display": "Aaj ka shidyool kya hai aur meri next meeting kab hai"
+          },
+          "R1-hi#0": {
+            "raw": "कल बैंगलोर में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा",
+            "display": "Kal Bangalore mein baarish ki sambhavna hai temparichar 20 se 28 degree tak rahega"
+          },
+          "R2-hi#0": {
+            "raw": "ठीक है मैंने आपकी मीटिंग के लिए पाचपी एम का रिमाइंडर सेट कर दिया है",
+            "display": "Theek hai maine aapki meeting ke liye paachpi em ka reminder set kar diya hai"
+          },
+          "R3-hi#0": {
+            "raw": "आपका अलार्मकल्स बहुत सार्ट बजे के लिए सेट हो गया है",
+            "display": "Aapka alaarmakals bahut saart baje ke liye set ho gaya hai"
+          },
+          "R4-hi#0": {
+            "raw": "आज आपकी तीन नीटिंग्स है और आपकी नीक्सट मीटिंग सारे चार पी एम्पल लैब रिव्यू है",
+            "display": "Aaj aapki teen nitings hai aur aapki neeksat meeting saare char pi empal lab review hai"
+          },
+          "H1-hi#0": {
+            "raw": "कल शाम छह बजे मीटिंग का रिमाइंटर लगा दो",
+            "display": "Kal shaam 6 baje meeting ka rimaaintar laga do"
+          },
+          "H2-hi#0": {
+            "raw": "परिसोसुबा आठ बजे का अलार्म सेट कर दो",
+            "display": "Parisosuba 8 baje ka alarm set kar do"
+          },
+          "H3-hi#0": {
+            "raw": "क्या कल बैंगलोर में बारिश होगी",
+            "display": "Kya kal Bangalore mein baarish hogi"
+          },
+          "H4-hi#0": {
+            "raw": "मेरी अगली मीटिंग कितने बजे हैं",
+            "display": "Meri agli meeting kitne baje hain"
+          },
+          "H5-hi#0": {
+            "raw": "आज शाम का मौसम कैसा रहेगा",
+            "display": "Aaj shaam ka mausam kaisa rahega"
+          }
+        }
+      },
+      "fp16wenc_int8dec": {
+        "size_mb": 76.1,
+        "files": [
+          "encoder_model.fp16w.onnx",
+          "decoder_model.int8.onnx",
+          "decoder_with_past_model.int8.onnx"
+        ],
+        "encoder_ms_median": 320.9,
+        "decoder_ms_per_step_median": 7.03,
+        "fleurs": {
+          "n": 40,
+          "display_cer": 0.1219,
+          "display_wer": 0.2858,
+          "native_cer": 0.1315,
+          "native_wer": 0.2788,
+          "step0_lid_hi_pct": 100.0
+        },
+        "corpus": {
+          "n": 6,
+          "display_cer": 0.1123,
+          "display_wer": 0.1236
+        },
+        "heldout": {
+          "n": 5,
+          "display_cer": 0.049,
+          "display_wer": 0.1667
+        },
+        "samples": {
+          "fleurs-1660": {
+            "raw": "रुमानियत में सांस्कृतिक नियतिवाद का बड़ा महत्ववाद था जो गोई थे फिचते और स्लेगल जैसे लेखको से लिया गया",
+            "display": "Rumaaniyat mein sanskritik niytivaad ka bara mahatvavaad tha jo goi the phichte aur slegal jaise lekhko se liya gaya"
+          },
+          "fleurs-1661": {
+            "raw": "यह कहते हुए वे चीन के आर्थिक उत्पादन के आधार पर बनाए जाएंगे उन्होंने कटौती के लिए कोई आंकड़ा निर्धालित नहीं किया",
+            "display": "Yah kahate hue ve cheen ke aarthik utpaadan ke aadhaar par banaae jaaenge unhonne katauti ke liye koi aankra nirdhaalit nahi kiya"
+          },
+          "fleurs-1665": {
+            "raw": "लिख के अनुसार दस्तावेज सीमा विवाद को संदर्भित करेगा जो फिलस्थीन नेटिंग जिसेवन के मध्यपुर वियुद्ध से पहले सीमाओं के आधार पर जाता है",
+            "display": "Likh ke anusaar dastaavej seema vivaad ko sandarbhit karega jo philastheen neting jisevan ke madhyapur viyudhd se pehle simaaon ke aadhaar par jaata hai"
+          },
+          "P3#0": {
+            "raw": "मुझे कल सुबह साथ बजे का अलार्म सेट करना है",
+            "display": "Mujhe kal subah 7 baje ka alarm set karna hai"
+          },
+          "P4#0": {
+            "raw": "आज का शिड्यूल क्या है और मेरी नेक्स्टमीटिंग कब है",
+            "display": "Aaj ka shidyool kya hai aur meri next meeting kab hai"
+          },
+          "R1-hi#0": {
+            "raw": "कल बैंगलोर में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा",
+            "display": "Kal Bangalore mein baarish ki sambhavna hai temparichar 20 se 28 degree tak rahega"
+          },
+          "R2-hi#0": {
+            "raw": "ठीक है मैंने आपकी मीटिंग के लिए पाचपीएम का रिमाण्डरसेट कर दिया है",
+            "display": "Theek hai maine aapki meeting ke liye paachpiem ka rimaandarset kar diya hai"
+          },
+          "R3-hi#0": {
+            "raw": "आपका अलार्म कल सुबह सात बजे के लिए सेट हो गया है",
+            "display": "Aapka alarm kal subah 7 baje ke liye set ho gaya hai"
+          },
+          "R4-hi#0": {
+            "raw": "आज आपकी तीन नीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार पी एमपुर लैब रिव्यू है",
+            "display": "Aaj aapki teen nitings hain aur aapki next meeting saadhe char pi empur lab review hai"
+          },
+          "H1-hi#0": {
+            "raw": "कल शाम छह बजे मीटिंग का निमांडल लगा दो",
+            "display": "Kal shaam 6 baje meeting ka nimandal laga do"
+          },
+          "H2-hi#0": {
+            "raw": "पर सो सुबह आठ बजे का अलार्म सेट कर दो",
+            "display": "Par so subah 8 baje ka alarm set kar do"
+          },
+          "H3-hi#0": {
+            "raw": "क्या कल बैंगलोर में बारिश होगी",
+            "display": "Kya kal Bangalore mein baarish hogi"
+          },
+          "H4-hi#0": {
+            "raw": "मेरी अगली मीटिंग कितने बजे हैं",
+            "display": "Meri agli meeting kitne baje hain"
+          },
+          "H5-hi#0": {
+            "raw": "आज शाम का मौसम कैसर हेगा",
+            "display": "Aaj shaam ka mausam kaisar hega"
+          }
+        }
+      },
+      "fp32enc_fp32dec": {
+        "size_mb": 424.2,
+        "files": [
+          "encoder_model.onnx",
+          "decoder_model.onnx",
+          "decoder_with_past_model.onnx"
+        ],
+        "encoder_ms_median": 322.0,
+        "decoder_ms_per_step_median": 11.8,
+        "fleurs": {
+          "n": 40,
+          "display_cer": 0.1085,
+          "display_wer": 0.2528,
+          "native_cer": 0.114,
+          "native_wer": 0.2405,
+          "step0_lid_hi_pct": 100.0
+        },
+        "corpus": {
+          "n": 6,
+          "display_cer": 0.1099,
+          "display_wer": 0.1368
+        },
+        "heldout": {
+          "n": 5,
+          "display_cer": 0.0444,
+          "display_wer": 0.2111
+        },
+        "samples": {
+          "fleurs-1660": {
+            "raw": "रुमानियत में सांस्कृतिक नियतिवाद का बड़ा महत्वथान जो गोई थे फिचते और स्लेगल जैसे लेखको से लिया गया",
+            "display": "Rumaaniyat mein sanskritik niytivaad ka bara mahatvathaan jo goi the phichte aur slegal jaise lekhko se liya gaya"
+          },
+          "fleurs-1661": {
+            "raw": "यह कहते हुए वे चीन के आर्थिक उत्पादन के आधार पर बनाए जाएंगे उन्होंने कटौती के लिए कोई आंकड़ा निर्धारित नहीं किया",
+            "display": "Yah kahate hue ve cheen ke aarthik utpaadan ke aadhaar par banaae jaaenge unhonne katauti ke liye koi aankra nirdhaarit nahi kiya"
+          },
+          "fleurs-1665": {
+            "raw": "लिख के अनुसार दस्तावेज़ सीमा विवाद को संदर्भित करेगा जो फिलस्थिंग नाइन्टीन चित्री सेवन के मध्यपुर व्युत से पहले सीमाओं के आधार पर चाहता है",
+            "display": "Likh ke anusaar dastaavez seema vivaad ko sandarbhit karega jo philasthing naainteen chitri sevan ke madhyapur vyut se pehle simaaon ke aadhaar par chaahata hai"
+          },
+          "P3#0": {
+            "raw": "मुझे कल सुबह सात बजे का अलाद में सेट करना है",
+            "display": "Mujhe kal subah 7 baje ka alaad mein set karna hai"
+          },
+          "P4#0": {
+            "raw": "आज का श्रेड्यूल क्या है और मेरी नेक्स्टमीटिंग कब है",
+            "display": "Aaj ka shredyool kya hai aur meri next meeting kab hai"
+          },
+          "R1-hi#0": {
+            "raw": "कल बैंगलोर में बारिश की संभावना है टेम्परिचर बीस से अट्ठाईस डिग्री तक रहेगा",
+            "display": "Kal Bangalore mein baarish ki sambhavna hai temparichar 20 se 28 degree tak rahega"
+          },
+          "R2-hi#0": {
+            "raw": "ठीक है मैंने आपकी मीटिंग के लिए पाँच पी एम का रिमाइंडर सेट कर दिया है",
+            "display": "Theek hai maine aapki meeting ke liye 5 PM ka reminder set kar diya hai"
+          },
+          "R3-hi#0": {
+            "raw": "आपका अलार्म कल सुबह सात बजे के लिए सेठ हो गया है",
+            "display": "Aapka alarm kal subah 7 baje ke liye seth ho gaya hai"
+          },
+          "R4-hi#0": {
+            "raw": "आज आपकी तीन नीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार पी एम्पल्लैब रिव्यू है",
+            "display": "Aaj aapki teen nitings hain aur aapki next meeting saarhe char pi empallaib review hai"
+          },
+          "H1-hi#0": {
+            "raw": "कल शाम छह बजे मीं टिंका रिमाइंडर लगा दो",
+            "display": "Kal shaam 6 baje min tinka reminder laga do"
+          },
+          "H2-hi#0": {
+            "raw": "पर सो सुबह आठ बजे का अलार्म सेठ कर दो",
+            "display": "Par so subah 8 baje ka alarm seth kar do"
+          },
+          "H3-hi#0": {
+            "raw": "क्या कल बैंगलोर में बारिश होगी",
+            "display": "Kya kal Bangalore mein baarish hogi"
+          },
+          "H4-hi#0": {
+            "raw": "मेरी अगली मीटिंग कितने बजे हैं",
+            "display": "Meri agli meeting kitne baje hain"
+          },
+          "H5-hi#0": {
+            "raw": "आज शाम का मौसम कैसर हेगा",
+            "display": "Aaj shaam ka mausam kaisar hega"
+          }
+        }
+      }
+    }
+  },
+  "hindi_asr_eval_shipped": {
+    "generated_at": "2026-10-18T22:24:15+00:00",
+    "method": "app-identical decoding (C++ log-Mel, KV-cached greedy, forced <|hi|>, app masks); FLEURS hi_in test first 100 sentence ids (real read speech, CC-BY-4.0) + closed-loop Hindi/Hinglish commands x 3 seeded VITS samples; native = Devanagari CER/WER; display = Roman CER/WER after the app's Kotlin displayTranscript on hypothesis and reference; host Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz, onnxruntime 1.31.0, 4 threads",
+    "models": {
+      "shipped_hindi_specialist": {
+        "size_mb": 76.1,
+        "files": [
+          "vaani_stt_hi_encoder.fp16.onnx",
+          "vaani_stt_hi_decoder.int8.onnx",
+          "vaani_stt_hi_decoder_with_past.int8.onnx"
+        ],
+        "encoder_ms_median": 325.8,
+        "decoder_ms_per_step_median": 7.09,
+        "fleurs": {
+          "n": 100,
+          "display_cer": 0.1393,
+          "display_wer": 0.2946,
+          "native_cer": 0.1525,
+          "native_wer": 0.2958,
+          "step0_lid_hi_pct": 100.0
+        },
+        "corpus": {
+          "n": 18,
+          "display_cer": 0.0822,
+          "display_wer": 0.0937
+        },
+        "heldout": {
+          "n": 15,
+          "display_cer": 0.0703,
+          "display_wer": 0.1592
+        },
+        "samples": {
+          "fleurs-1660": {
+            "raw": "रुमानियत में सांस्कृतिक नियतिवाद का बड़ा महत्ववाद था जो गोई थे फिचते और स्लेगल जैसे लेखको से लिया गया",
+            "display": "Rumaaniyat mein sanskritik niytivaad ka bara mahatvavaad tha jo goi the phichte aur slegal jaise lekhko se liya gaya"
+          },
+          "fleurs-1661": {
+            "raw": "यह कहते हुए वे चीन के आर्थिक उत्पादन के आधार पर बनाए जाएंगे उन्होंने कटौती के लिए कोई आंकड़ा निर्धालित नहीं किया",
+            "display": "Yah kahate hue ve cheen ke aarthik utpaadan ke aadhaar par banaae jaaenge unhonne katauti ke liye koi aankra nirdhaalit nahi kiya"
+          },
+          "fleurs-1665": {
+            "raw": "लिख के अनुसार दस्तावेज सीमा विवाद को संदर्भित करेगा जो फिलस्थीन नेटिंग जिसेवन के मध्यपुर वियुद्ध से पहले सीमाओं के आधार पर जाता है",
+            "display": "Likh ke anusaar dastaavej seema vivaad ko sandarbhit karega jo philastheen neting jisevan ke madhyapur viyudhd se pehle simaaon ke aadhaar par jaata hai"
+          },
+          "P3#0": {
+            "raw": "मुझे कल सुबह साथ बजे का अलार्म सेट करना है",
+            "display": "Mujhe kal subah 7 baje ka alarm set karna hai"
+          },
+          "P4#0": {
+            "raw": "आज का शिड्यूल क्या है और मेरी नेक्स्टमीटिंग कब है",
+            "display": "Aaj ka shidyool kya hai aur meri next meeting kab hai"
+          },
+          "R1-hi#0": {
+            "raw": "कल बैंग लोअर में बारिश की संभावना है टेंपरेचर बीस से अट्ठाईस डिग्री तक रहेगा",
+            "display": "Kal beng loar mein baarish ki sambhavna hai tenprechar 20 se 28 degree tak rahega"
+          },
+          "R2-hi#0": {
+            "raw": "ठीक है मैंने आपकी मीटिंग के लिए पाँच पीएम का रिमाण्डर्स सेट कर दिया है",
+            "display": "Theek hai maine aapki meeting ke liye 5 PM ka rimaandars set kar diya hai"
+          },
+          "R3-hi#0": {
+            "raw": "आपका अलार्म कल सुबह साथ बजे के लिए सेठ हो गया है",
+            "display": "Aapka alarm kal subah 7 baje ke liye seth ho gaya hai"
+          },
+          "R4-hi#0": {
+            "raw": "आज आपकी तीन मीटिंग्स हैं और आपकी नेक्स्ट मीटिंग साढ़े चार पी एम पर लैब रिव्यू है",
+            "display": "Aaj aapki teen meetings hain aur aapki next meeting 4:30 PM par lab review hai"
+          },
+          "H1-hi#0": {
+            "raw": "कर शाम छे बजे मीं टिंका रिमाडल लगा दो",
+            "display": "Kar shaam 6 baje min tinka rimaadal laga do"
+          },
+          "H2-hi#0": {
+            "raw": "पर सो सुबह आठ बजे का अलार्म सेट कर दो",
+            "display": "Par so subah 8 baje ka alarm set kar do"
+          },
+          "H3-hi#0": {
+            "raw": "क्या कल बैंगलोर में बारिश होगी",
+            "display": "Kya kal Bangalore mein baarish hogi"
+          },
+          "H4-hi#0": {
+            "raw": "मेरी अगली मीटिंग कितने बजे है",
+            "display": "Meri agli meeting kitne baje hai"
+          },
+          "H5-hi#0": {
+            "raw": "आज शाम का मौसम कैसर हेगा",
+            "display": "Aaj shaam ka mausam kaisar hega"
+          }
+        }
+      }
+    }
+  },
+  "iteration4_hindi_stt": {
+    "generated_at": "2026-10-18T22:36:10+00:00",
+    "problem": "multilingual Whisper-tiny on real Hindi (FLEURS hi_in test, 100 sentences): CER 1.04 / WER 1.05 — translation, loops, garble",
+    "candidates_searched": "Hugging Face Hub Hindi/Hinglish Whisper fine-tunes; on-device-sized ones exported with Optimum and decoded with the app's decoder (speech_lab/eval_hindi_asr.py)",
+    "results_before_after": {
+      "before_multilingual_tiny_int8": {
+        "size_mb": 71.4,
+        "fleurs_native_cer": 1.0423,
+        "fleurs_native_wer": 1.0496,
+        "fleurs_display_cer": 0.7303,
+        "corpus_display_cer": 0.5486,
+        "heldout_display_cer": 0.5398,
+        "encoder_ms_host": 486.2,
+        "decoder_ms_per_step_host": 15.77
+      },
+      "now_artpark_fp16enc_int8dec": {
+        "size_mb": 76.1,
+        "fleurs_native_cer": 0.1525,
+        "fleurs_native_wer": 0.2958,
+        "fleurs_display_cer": 0.1393,
+        "corpus_display_cer": 0.0822,
+        "heldout_display_cer": 0.0703,
+        "encoder_ms_host": 325.8,
+        "decoder_ms_per_step_host": 7.09
+      }
+    },
+    "reference_rows": {
+      "artpark_tiny_hi_int8": {
+        "size_mb": 71.3,
+        "fleurs_native_cer": 0.2569,
+        "fleurs_native_wer": 0.429,
+        "fleurs_display_cer": 0.2354,
+        "corpus_display_cer": 0.1516,
+        "heldout_display_cer": 0.0814,
+        "encoder_ms_host": 513.4,
+        "decoder_ms_per_step_host": 12.64
+      },
+      "artpark_tiny_hi_fp32": {
+        "size_mb": 424.2,
+        "fleurs_native_cer": 0.1411,
+        "fleurs_native_wer": 0.2729,
+        "fleurs_display_cer": 0.129,
+        "corpus_display_cer": 0.1029,
+        "heldout_display_cer": 0.0703,
+        "encoder_ms_host": 421.6,
+        "decoder_ms_per_step_host": 16.4
+      },
+      "oriserve_base_hinglish_fp32": {
+        "size_mb": 698.7,
+        "fleurs_native_cer": 1.2145,
+        "fleurs_native_wer": 1.0411,
+        "fleurs_display_cer": 0.1732,
+        "corpus_display_cer": 0.1098,
+        "heldout_display_cer": 0.0306,
+        "encoder_ms_host": 903.0,
+        "decoder_ms_per_step_host": 28.75
+      }
+    },
+    "first_screen_notes": "first screen (same 100 FLEURS + 33 command samples, scored with the pre-upgrade romaniser); collabora models never emit end-of-text under the app's KV greedy decoder",
+    "precision_ablation_40_fleurs": {
+      "int8enc_int8dec": {
+        "size_mb": 71.3,
+        "fleurs_native_cer": 0.2579,
+        "fleurs_native_wer": 0.4151
+      },
+      "fp32enc_int8dec": {
+        "size_mb": 92.5,
+        "fleurs_native_cer": 0.1329,
+        "fleurs_native_wer": 0.2811
+      },
+      "int8enc_fp32dec": {
+        "size_mb": 403.0,
+        "fleurs_native_cer": 0.217,
+        "fleurs_native_wer": 0.3649
+      },
+      "fp16wenc_int8dec": {
+        "size_mb": 76.1,
+        "fleurs_native_cer": 0.1315,
+        "fleurs_native_wer": 0.2788
+      },
+      "fp32enc_fp32dec": {
+        "size_mb": 424.2,
+        "fleurs_native_cer": 0.114,
+        "fleurs_native_wer": 0.2405
+      }
+    },
+    "decision": "ship ARTPARK-IISc/whisper-tiny-vaani-hindi (Apache-2.0) as the Hindi specialist: fp16-stored encoder (16.5 MB, fp32 compute; INT8 doubled FLEURS CER) + INT8 decoders with one shared token table (30.4 + 29.2 MB); all graphs pass check_ort_compat.py under onnxruntime 1.18.0",
+    "routing": "multilingual tiny encoder + step-0 LID; LID 'hi' -> the same Mel re-encoded and decoded (<|hi|>) by the specialist; manual Hinglish mode skips the multilingual pass",
+    "routed_closed_loop": {
+      "label": "iteration4_hindi_specialist",
+      "hinglish_display_cer": 0.099592,
+      "hinglish_raw_devanagari_cer": 0.032814,
+      "previous_hinglish_display_cer": 0.53543,
+      "heldout_display_cer_by_language": {
+        "en": 0.36286,
+        "hi": 0.06796,
+        "all": 0.17855
+      },
+      "stt_ms_host_hi_vs_en": {
+        "hi": 1155,
+        "en": 514
+      }
+    },
+    "lid": {
+      "fleurs_real_hindi_routed_to_hindi_pct": 96.0,
+      "synthetic_english_routed_to_english": "24/27",
+      "regression": "an English sentence misrouted to Hindi is now transliterated into Devanagari by the specialist (held-out EN display CER 0.06 -> 0.36, driven by 'Wake me up at 6:30 AM tomorrow.' at P(hi) 0.77-0.98); the English/Hinglish chips force a path"
+    },
+    "rejected_logprob_arbitration": {
+      "idea": "for uncertain LID decode with both models and keep the higher mean token log-prob",
+      "result": "no routing change: the specialist is confident even on English audio",
+      "mean_logprob_hindi_model_on_english": -0.122,
+      "mean_logprob_tiny_english_on_english": -0.375
+    },
+    "romaniser": "Devanagari -> Roman: curated lexicon + reversed Hinglish lexicon (gold), number words -> digits before units, PM/AM letters, fused-word split, G2P (IndicPhonemizer) romaniser with Hinglish endings for unseen words",
+    "first_screen_pre_romaniser": {
+      "collabora_whisper_tiny_hindi_fp32": {
+        "license": "CC-BY-4.0",
+        "fleurs_native_cer": 0.752,
+        "fleurs_native_wer": 0.907,
+        "corpus_display_cer": 1.186,
+        "heldout_display_cer": 1.667
+      },
+      "collabora_whisper_tiny_hindi_int8": {
+        "fleurs_native_cer": 0.776,
+        "fleurs_native_wer": 0.911,
+        "corpus_display_cer": 1.218,
+        "heldout_display_cer": 1.476
+      },
+      "collabora_whisper_base_hindi_fp32": {
+        "license": "CC-BY-4.0",
+        "fleurs_native_cer": 0.727,
+        "fleurs_native_wer": 0.808,
+        "corpus_display_cer": 0.792,
+        "heldout_display_cer": 1.215
+      },
+      "abhishekgautamm_whisper_tiny_hinglish_fp32": {
+        "license": "MIT",
+        "output": "Roman",
+        "fleurs_display_cer": 0.329,
+        "corpus_display_cer": 0.127,
+        "heldout_display_cer": 0.11
+      },
+      "openai_whisper_tiny_fp32": {
+        "fleurs_native_cer": 1.121,
+        "fleurs_native_wer": 1.094,
+        "corpus_display_cer": 0.569,
+        "heldout_display_cer": 0.316
+      }
     }
   }
 }

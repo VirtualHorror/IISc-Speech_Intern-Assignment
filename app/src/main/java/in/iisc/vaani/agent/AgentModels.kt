@@ -49,6 +49,7 @@ data class Telemetry(
     val ttsRtf: Double? = null,
     val e2eLatencyMs: Long? = null,
     val llmLabel: String? = null,
+    val sttModel: String? = null,
 )
 
 sealed class ActionCard {
@@ -72,6 +73,7 @@ sealed class FeedItem {
         val wer: Double? = null,
         /** Set when the text is not a recognition result (e.g. the chip's prompt after STT failed). */
         val note: String? = null,
+        val sttModel: String? = null,
     ) : FeedItem()
 
     data class Assistant(

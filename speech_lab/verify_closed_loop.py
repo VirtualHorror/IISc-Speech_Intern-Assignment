@@ -542,6 +542,8 @@ def main():
     ap.add_argument("--tts", default=os.path.join(ASSETS, "vaani_tts_vits.fp16.onnx"))
     ap.add_argument("--seed", type=int, default=1234, help="ORT RNG seed (VITS noise) for reproducible audio")
     ap.add_argument("--ab-encoders", default="", help="name=path,... : paired encoder precision study")
+    ap.add_argument("--hindi-model", default=os.path.join(ASSETS, "vaani_stt_hi_encoder.fp16.onnx"),
+                    help="Hindi specialist encoder (decoders alongside, vaani_stt_hi_*); routed like the app; 'none' to disable")
     ap.add_argument("--rescore-display", action="store_true",
                     help="re-run only the Kotlin display pass on the transcripts of the last full run")
     args = ap.parse_args()
@@ -564,6 +566,12 @@ def main():
     past_path = next((p for p in WITH_PAST_CANDIDATES if os.path.exists(p)), None)
     stt = WhisperOnnx(args.encoder, os.path.join(ASSETS, "vaani_stt_decoder.int8.onnx"), past_path,
                       vocab, args.threads)
+    hindi = None
+    if args.hindi_model != "none" and os.path.exists(args.hindi_model):
+        hdir = os.path.dirname(args.hindi_model)
+        hindi = WhisperOnnx(args.hindi_model, os.path.join(hdir, "vaani_stt_hi_decoder.int8.onnx"),
+                            os.path.join(hdir, "vaani_stt_hi_decoder_with_past.int8.onnx"), vocab, args.threads)
+        log(f"Hindi specialist: {os.path.basename(args.hindi_model)} (+ decoders) — Hindi turns are re-decoded by it")
     tts = make_session(args.tts, args.threads, mem_pattern=False)
 
     # Warm-up (first-run allocation / kernel selection excluded from timings).
@@ -575,6 +583,18 @@ def main():
 
     if args.ab_encoders:
         return run_encoder_ab(args, fixture, filters, dsp, stt, tts)
+
+    def route(mel, lang_mode, audio_sec):
+        """The app's routing: multilingual LID (+ English decode); `hi` -> the Hindi specialist."""
+        hidden, enc_ms = stt.encode(mel)
+        d = stt.decode_kv(hidden, lang_mode, audio_sec)
+        d.update(enc_ms=enc_ms, model="whisper-tiny")
+        if hindi is None or d["lang"] != "hi":
+            return d, hidden, stt
+        h_hidden, h_ms = hindi.encode(mel)
+        h = hindi.decode_kv(h_hidden, "hi", audio_sec)
+        h.update(detected=d["detected"], p_hi=d["p_hi"], lid_ms=d["lid_ms"], enc_ms=enc_ms + h_ms, model="whisper-tiny-hi")
+        return h, h_hidden, hindi
 
     wav_dir = os.path.join(BUILD, "closed_loop_wavs")
     os.makedirs(wav_dir, exist_ok=True)
@@ -614,10 +634,13 @@ def main():
                 mel, mel_ms = mel_ref, ref_ms
 
             # ---- encoder + LID + decode (auto and forced language) ----
-            hidden, enc_ms = stt.encode(mel)
-            auto = stt.decode_kv(hidden, "auto", audio_sec)
-            forced = auto if auto["lang"] == utt["lang"] else stt.decode_kv(hidden, utt["lang"], audio_sec)
-            cf_tokens, cf_ms, cf_calls = stt.decode_cache_free(hidden.numpy(), forced["lang"], audio_sec)
+            auto, hidden, eng = route(mel, "auto", audio_sec)
+            enc_ms = auto["enc_ms"]
+            if auto["lang"] != utt["lang"]:
+                forced, hidden, eng = route(mel, utt["lang"], audio_sec)
+            else:
+                forced = auto
+            cf_tokens, cf_ms, cf_calls = eng.decode_cache_free(hidden.numpy(), forced["lang"], audio_sec)
             run = {
                 "tts_ms": tts_ms, "tts_first_audio_ms": first_audio_ms, "audio_sec": audio_sec,
                 "tts_rtf": (tts_ms / 1e3) / audio_sec if audio_sec else None, "raw_peak": peak,
@@ -673,7 +696,8 @@ def main():
                              "numbers. The app's telemetry HUD reports live on-device STT/LLM/TTS/E2E."),
         "runs_per_utterance": args.runs,
         "models": {"encoder": os.path.basename(args.encoder), "tts": os.path.basename(args.tts),
-                   "decoder": "vaani_stt_decoder.int8.onnx", "decoder_with_past": os.path.basename(past_path or "")},
+                   "decoder": "vaani_stt_decoder.int8.onnx", "decoder_with_past": os.path.basename(past_path or ""),
+                   "hindi_specialist": os.path.basename(args.hindi_model) if hindi else None},
         "g2p": {
             "phoneme_coverage_pct": fixture["phoneme_coverage_pct"],
             "phoneme_codepoints_total": fixture["phoneme_codepoints_total"],
@@ -724,6 +748,7 @@ def main():
             "acoustic_devanagari": row["utt"]["acoustic_devanagari"],
             "audio_sec": round(row["best"]["audio_sec"], 3),
             "lid_detected": [x["auto"]["detected"] for x in row["runs"]],
+            "stt_model": [x["auto"].get("model") for x in row["runs"]],
             "lid_p_hi": [round(x["auto"]["p_hi"], 3) for x in row["runs"]],
             "transcripts_auto": [x["auto_text"] for x in row["runs"]],
             "transcripts_forced": [x["forced_text"] for x in row["runs"]],

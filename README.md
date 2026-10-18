@@ -3,7 +3,8 @@
 **IISc Computational Intelligence Lab** · Android · Snapdragon 8+ Gen 1 (OnePlus 11R 5G, `arm64-v8a`)
 
 A Hinglish + English voice agent whose speech stack runs entirely on the phone —
-Silero VAD → KV-cached Whisper STT with step-0 language ID → Hinglish post-correction →
+Silero VAD → KV-cached Whisper STT with step-0 language ID (Hindi turns go to a Hindi-trained
+Whisper, IISc ARTPARK's Vaani model) → Hinglish post-correction →
 streaming cloud LLM with a Groq ⇄ Gemini failover cascade → clause-level Indic VITS TTS —
 built from first principles on the official **ONNX Runtime** (Microsoft, MIT). It answers the
 four IISc evaluation scenarios (Bengaluru weather tomorrow, a 5 PM meeting reminder, a 7 AM alarm
@@ -12,7 +13,7 @@ turn. Every engine, DSP routine, codec and UI component under `in.iisc.vaani.*` 
 models, runtime and fonts are attributed dependencies (see [`NOTICE`](NOTICE)).
 
 > `./gradlew testDebugUnitTest assembleDebug assembleRelease`
-> → **BUILD SUCCESSFUL, 90 unit tests green**, a debug APK and a signed release APK. Every
+> → **BUILD SUCCESSFUL, 93 unit tests green**, a debug APK and a signed release APK. Every
 > shipped graph loads and runs under onnxruntime **1.18.0** (the APK's runtime) on the
 > host. Speech quality and latency below are **measured on the build host**; the phone's own
 > numbers appear in the in-app HUD and in logcat (`VaaniTelemetry`).
@@ -30,6 +31,8 @@ models, runtime and fonts are attributed dependencies (see [`NOTICE`](NOTICE)).
           (C++, zero-frame skip)                     │  cross-attn K/V computed once, reused by reference
                                                      ▼
                          decoder_with_past (KV cache, fused INT8 logits) ─▶ masked greedy ─▶ raw text
+          │ LID = hi: the same Mel ─▶ Hindi Whisper-tiny (ARTPARK Vaani; fp16-stored encoder, INT8
+          │           decoders, KV cache) ─▶ Devanagari ─▶ G2P-based romaniser
           ▼
    HinglishCodec.displayTranscript: phonetic lexicon + compound splitter + context rules (< 0.5 ms)
           ▼
@@ -52,7 +55,7 @@ models, runtime and fonts are attributed dependencies (see [`NOTICE`](NOTICE)).
 | `agent`, `audio`, `runtime`, `ui` | Turn orchestration + telemetry, capture/playback pipeline, asset→engine glue with warm-up, Jetpack Compose Material 3 UI. |
 
 ### UI
-Telemetry HUD (`STT (Local INT8)`, `LLM TTFT`, `TTS First-Audio`, `Total E2E Latency` with a
+Telemetry HUD (`STT (On-device)`, `LLM TTFT`, `TTS First-Audio`, `Total E2E Latency` with a
 proportional STT | LLM | TTS latency bar), status line, language (`Auto EN/HI` / `English` /
 `Hinglish`) and LLM chips, a strip with the four IISc prompts (**Speak** live or **Loopback**:
 the phone synthesises the prompt, feeds that audio to STT → LLM → TTS and logs the turn), the
@@ -65,6 +68,41 @@ replay and a Devanagari/IPA phonetics view, action cards (weather, alarm, remind
 override, Groq/Gemini keys, cloud on/off, recognition language.
 
 ---
+
+## Hindi / Hinglish STT: a Hindi-trained Whisper for Hindi turns
+
+The multilingual Whisper-tiny that does language ID and English mostly translates, loops or
+garbles Hindi. Every Hindi turn is therefore re-decoded, from the same Mel features, by
+**`ARTPARK-IISc/whisper-tiny-vaani-hindi`**: Whisper-tiny fine-tuned by IISc ARTPARK on about
+718 h of Hindi (Vaani, IndicVoices, FLEURS, …; Apache-2.0). It keeps the same size and the same
+decoding code. The manual *Hinglish* mode skips the multilingual pass.
+
+Five on-device-sized candidates were compared with the app's exact decoder
+(`speech_lab/eval_hindi_asr.py`) on **100 real FLEURS Hindi sentences** and on the Hinglish
+commands, the latter synthesised and seeded so every model hears the same audio:
+
+| Model (as shipped) | Size | FLEURS CER / WER (real speech) | Commands CER (corpus / held-out) |
+|---|---|---|---|
+| Multilingual Whisper-tiny INT8 (before) | 71 MB | 1.04 / 1.05 | 0.55 / 0.54 |
+| **ARTPARK Vaani tiny, fp16 encoder + INT8 decoders (now)** | 76 MB | **0.15 / 0.30** | **0.08 / 0.07** |
+| ARTPARK Vaani tiny, all INT8 | 71 MB | 0.26 / 0.43 | 0.15 / 0.08 |
+| Oriserve Hindi2Hinglish *base* (Roman output, fp32) | 699 MB | display 0.17 | 0.11 / 0.03 |
+| Collabora whisper-tiny-hindi (fp32) | 424 MB | 0.75 (never ends) | > 1 |
+
+- **Precision.** Making the encoder INT8 nearly doubles FLEURS CER, from 0.132 to 0.258. INT8
+  decoders cost only about 0.02. The encoder therefore ships fp16-stored with fp32 compute, 4.8 MB
+  more and no slower on the host.
+- **Romanising Devanagari.** The specialist writes Devanagari, which the app romanises. The
+  curated Hinglish lexicon is reversed to give gold spellings (`आपकी → aapki`, `अगली → agli`).
+  Number words become digits only before a unit (`बीस से अट्ठाईस डिग्री → 20 se 28 degree`,
+  `साढ़े चार पी एम → 4:30 PM`). Fused words are split (`नेक्स्टमीटिंग → next meeting`), and
+  unseen words go through the app's own G2P, so schwa deletion matches speech (`आपका → aapka`).
+- **End to end.** The routed closed loop (LID, then specialist) gives Hinglish display CER
+  0.535 → 0.100. Raw Devanagari CER against what the voice spoke is 0.033.
+- **Cost.** A Hindi turn runs two encoders, the LID pass plus the specialist, and Devanagari takes
+  more decoder steps per word. In the closed loop on this loaded 2-core host, Hindi STT averages
+  ≈1.15 s against ≈0.51 s for English, which is unchanged. The *Hinglish* chip skips the LID
+  encoder. Phone numbers appear in the HUD.
 
 ## LLM: Groq ⇄ Gemini failover cascade
 
@@ -166,6 +204,18 @@ Whisper-tiny itself, not from quantisation. No encoder reaches 120 ms on this 2-
 Whisper always encodes a 30 s window.
 
 ### Engineering findings
+**Iteration 4 (Hindi STT)**
+1. A Hindi-trained Whisper-tiny takes every Hindi turn: real-speech Hindi CER 1.04 → 0.15 (see
+   *Hindi / Hinglish STT* above). Tested and rejected:
+   - the Collabora fine-tunes, which never emit end-of-text under the app's decoder;
+   - Oriserve-base, about 2× slower;
+   - an INT8 encoder.
+2. **Arbitration for uncertain LID** (rejected): decoding with both models and keeping the higher
+   mean log-prob does not separate languages, because the Hindi model transliterates English into
+   Devanagari with high confidence (≈ −0.08 vs −0.25…−0.5).
+3. The Devanagari romaniser is G2P-based, with the lexicon reversed, units turned into digits and
+   fused words split.
+
 **Iteration 3**
 1. **Groq ⇄ Gemini cascade** (above) with cool-downs, first-token timeout and provider skip; 17
    MockWebServer tests cover every failover path.
@@ -259,6 +309,8 @@ python speech_lab/prepare_models.py [--only stt,vocab,vad,tts,mel,lexicon]   # a
 python speech_lab/verify_closed_loop.py --runs 6                # Kotlin G2P → VITS → C++ DSP → Whisper → Kotlin post-corrector
 python speech_lab/verify_closed_loop.py --ab-encoders int8=A.onnx,fp32=B.onnx --runs 6   # paired precision study
 python speech_lab/decode_language_ab.py                         # <|hi|> vs <|en|> decoding experiment
+python speech_lab/eval_hindi_asr.py --models name=DIR ...        # Hindi ASR on FLEURS hi + commands (--rescore)
+python speech_lab/prepare_models.py --only stt-hi --optimum-cli /path/to/torch-venv/bin/optimum-cli
 python speech_lab/llm_smoke_once.py                             # EXACTLY one request per model (quota-safe)
 /tmp/vaani_venv_ort118/bin/python speech_lab/check_ort_compat.py --write    # onnxruntime==1.18.0 gate
 /tmp/vaani_venv_ort118/bin/python speech_lab/check_ort_compat.py --models X.onnx --runs 10 --threads 4
@@ -271,10 +323,13 @@ host-only tools: `espeakng-loader` (G2P reference), `tokenizers` (non-speech tok
 
 ## Known limitations
 - Host numbers are indicative; the HUD/logcat give the real ones.
-- **Whisper-tiny's Hinglish ceiling**: on synthetic Hinglish speech it often translates to English
-  or hallucinates; the post-corrector fixes spelling, not meaning. The LLM prompt includes the raw
-  ASR line and says transcripts may be noisy. A larger multilingual or Indic ASR model is the next
-  accuracy step.
+- **Language ID is the weak link.** The multilingual tiny's step-0 LID routes 96% of real Hindi
+  FLEURS sentences to the Hindi model. It sent the short English sentence "Wake me up at 6:30 AM
+  tomorrow." to the Hindi model in 5 of 6 synthetic samples, and that model writes English in
+  Devanagari. Both English benchmark prompts route to English (P(hi) 0.14 / 0.06). The *English* /
+  *Hinglish* chip forces a path.
+- Hindi accuracy is measured on read FLEURS speech and synthetic commands, not on your own phone
+  recordings; the HUD and logcat show live transcripts.
 - LLM TTFTs are single samples from the build host (quota-safe); phone-network TTFT will differ.
 - Free tiers: Groq 1,000 requests/day and 8k tokens/min per model, Gemini 3.5 Flash 20/day. The
   cascade absorbs a rate-limited rung, but heavy use can exhaust them all, leaving on-device replies.

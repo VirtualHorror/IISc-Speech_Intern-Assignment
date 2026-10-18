@@ -197,7 +197,7 @@ private fun TelemetryHud(state: AgentUiState) {
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
         Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
-            HudRow("STT (Local INT8)", t.sttMs?.let { "$it ms • RTF ${"%.2f".format(t.sttRtf ?: 0.0)}" }, Vaani.Saffron)
+            HudRow("STT (On-device)", t.sttMs?.let { "$it ms • RTF ${"%.2f".format(t.sttRtf ?: 0.0)}" }, Vaani.Saffron)
             HudRow("LLM TTFT", t.llmTtftMs?.let { "$it ms" + if (t.connectionReused == true) "  warm" else "" }, Vaani.Cloud)
             HudRow("TTS First-Audio", t.ttsFirstAudioMs?.let { "$it ms" }, Vaani.Phosphor)
             Spacer(Modifier.height(8.dp))
@@ -405,6 +405,7 @@ private fun UserBubble(item: FeedItem.User) {
                 Text(
                     buildString {
                         item.sttMs?.let { append("STT $it ms") }
+                        item.sttModel?.takeIf { it.endsWith("-hi") }?.let { append(" · $it") }
                         if (item.source == "loopback") append("   loopback")
                         item.wer?.let { append("   WER ${"%.0f".format(it * 100)}%") }
                     },

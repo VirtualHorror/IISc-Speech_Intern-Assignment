@@ -40,6 +40,13 @@ metadata (`producer_name`, `doc_string`) records the same provenance.
    decoder + decoder_with_past INT8 with a rewritten tied-embedding output
    projection; repackaged as vaani_stt_*.int8.onnx.
 
+2b. Whisper-tiny Hindi (ARTPARK-IISc/whisper-tiny-vaani-hindi) — © ARTPARK, IISc.  Apache License 2.0.
+   Hindi STT specialist used for every Hindi turn: a fine-tune of openai/whisper-tiny on
+   ~718 h of transcribed Hindi speech (Vaani, Gram Vaani, IndicVoices, FLEURS, IndicTTS,
+   Common Voice; see its model card, https://huggingface.co/ARTPARK-IISc/whisper-tiny-vaani-hindi).
+   Exported to ONNX with Hugging Face Optimum; encoder stored fp16 (computed fp32),
+   decoders INT8 with one shared token table; repackaged as vaani_stt_hi_*.onnx.
+
 3. Silero VAD                    — © Silero Team.          MIT License.
    Voice-activity model, repackaged as vaani_vad.onnx.
 
@@ -69,6 +76,10 @@ Host-side measurement tools only (NOT linked into or shipped with the app):
 11. espeak-ng (GPL-3.0), via the `espeakng-loader` Python package, is used by
    speech_lab/verify_closed_loop.py purely as a reference to score the original
    Kotlin G2P against the phonemizer the Piper voice was trained with.
+12. Google FLEURS (hi_in test split, CC BY 4.0) — real Hindi speech used only by
+   speech_lab/eval_hindi_asr.py to measure Hindi recognition; never redistributed.
+13. PyTorch (BSD-3-Clause), Hugging Face Transformers / Optimum (Apache-2.0) — used
+   only on the build host to export the Hindi checkpoint to ONNX.
 
 The Whisper Slaney Mel-filterbank matrix in vaani_mel_filters.bin is computed
 from first principles (see speech_lab/prepare_models.py) and matches OpenAI's

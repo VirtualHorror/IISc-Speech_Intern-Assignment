@@ -116,7 +116,8 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
                     runtimeReady = true,
                     statusDetail = "ARM64 NEON + ONNX INT8 Ready",
                     runtimeSummary = "models ${"%.0f".format(r.modelMb)} MB • load ${r.totalMs} ms" +
-                        (if (r.kvCache) " • KV-cache" else "") + " • lexicon ${r.lexiconWords / 1000}k",
+                        (if (r.kvCache) " • KV-cache" else "") + (r.hindiModel?.let { " • Hindi: $it" } ?: "") +
+                        " • lexicon ${r.lexiconWords / 1000}k",
                 )
             }
             Log.i(TAG, "runtime ready: $r")
@@ -319,12 +320,12 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
             t.telemetry = t.telemetry.copy(
                 sttMs = r.sttLatencyMs, sttRtf = r.sttRtf, melMs = r.melMs, encoderMs = r.encoderMs,
                 decodeMs = r.decodeMs, tokensPerSec = r.tokensPerSecond, lid = r.detectedLanguage, pHindi = r.pHindi,
-                llmLabel = activeEngineLabel(),
+                llmLabel = activeEngineLabel(), sttModel = r.model,
             )
         }
         val wer = if (note == null) t.benchmark?.let { Metrics.wordErrorRate(it.text, display) } else null
         addFeed(FeedItem.User(ids.getAndIncrement(), display, lang, r.sttLatencyMs,
-            r.text.takeIf { it.trim() != display }, t.source, t.benchmark, wer, note))
+            r.text.takeIf { it.trim() != display }, t.source, t.benchmark, wer, note, sttModel = r.model))
         _ui.update { it.copy(telemetry = t.telemetry) }
         respond(t, display, if (note == null) r.text else display)
     }
@@ -493,7 +494,7 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
             .put("conn_reused", tm.connectionReused).put("tts_first_audio_ms", tm.ttsFirstAudioMs)
             .put("e2e_ms", tm.e2eLatencyMs).put("transcript", transcript).put("reply", reply)
             .put("llm_model_id", stats?.modelId).put("failovers", stats?.failovers?.joinToString("; "))
-            .put("stt_fallback", t.sttFallback)
+            .put("stt_fallback", t.sttFallback).put("stt_model", tm.sttModel)
         Log.i("VaaniTelemetry", j.toString())
     }
 
