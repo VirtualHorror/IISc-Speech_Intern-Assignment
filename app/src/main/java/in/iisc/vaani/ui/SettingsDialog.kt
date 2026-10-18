@@ -38,7 +38,7 @@ import `in`.iisc.vaani.llm.LlmModel
 import `in`.iisc.vaani.llm.LlmModels
 import `in`.iisc.vaani.neural.LanguageMode
 
-/** LLM provider/model, runtime API keys (override BuildConfig) and recognition language. */
+/** Primary LLM + failover order, runtime API keys (override BuildConfig) and recognition language. */
 @Composable
 fun SettingsDialog(
     state: AgentUiState,
@@ -46,7 +46,7 @@ fun SettingsDialog(
     onDismiss: () -> Unit,
     onSave: (LlmModel, String?, String?, LanguageMode, Boolean, String) -> Unit,
 ) {
-    var model by remember { mutableStateOf(LlmModels.ALL.firstOrNull { it.provider == state.model.provider && (it.id == state.model.id || it.id == state.model.fallbackId) } ?: state.model) }
+    var model by remember { mutableStateOf(state.baseModel) }
     var override by remember { mutableStateOf(state.modelIdOverride) }
     var groq by remember { mutableStateOf("") }
     var gemini by remember { mutableStateOf("") }
@@ -71,7 +71,7 @@ fun SettingsDialog(
                     )
                 }
                 Spacer(Modifier.height(12.dp))
-                Text("Model", style = MaterialTheme.typography.titleSmall, color = Vaani.Paper)
+                Text("Primary model", style = MaterialTheme.typography.titleSmall, color = Vaani.Paper)
                 for (m in LlmModels.ALL) {
                     Row(
                         Modifier.fillMaxWidth().clickable { model = m }.padding(vertical = 2.dp),
@@ -81,10 +81,18 @@ fun SettingsDialog(
                             colors = RadioButtonDefaults.colors(selectedColor = Vaani.Cloud))
                         Column {
                             Text(m.label, style = MaterialTheme.typography.bodyMedium, color = Vaani.Paper)
-                            Text(m.id, style = MaterialTheme.typography.labelSmall, color = Vaani.Fog)
+                            Text(if (m.note.isEmpty()) m.id else "${m.id} • ${m.note}",
+                                style = MaterialTheme.typography.labelSmall, color = Vaani.Fog)
                         }
                     }
                 }
+                Text(
+                    "Automatic failover (before the first token): " +
+                        LlmModels.cascadeFrom(model).joinToString(" → ") { it.label } + " → on-device replies. " +
+                        "Models without a key are skipped.",
+                    style = MaterialTheme.typography.bodySmall, color = Vaani.Fog,
+                    modifier = Modifier.padding(vertical = 6.dp),
+                )
                 OutlinedTextField(
                     value = override, onValueChange = { override = it },
                     label = { Text("Model id override (optional)") },

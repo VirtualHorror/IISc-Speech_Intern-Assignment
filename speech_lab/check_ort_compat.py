@@ -12,12 +12,18 @@
 #     /tmp/vaani_venv_ort118/bin/pip install onnxruntime==1.18.0 "numpy<2"
 #     /tmp/vaani_venv_ort118/bin/python speech_lab/check_ort_compat.py [--write]
 #
+#  Candidate graphs (e.g. an encoder precision study) can be checked and timed with
+#  the app's session options (ALL_OPT, 4 intra-op threads, spinning) before shipping:
+#     .../python speech_lab/check_ort_compat.py --models a.onnx b.onnx --runs 10
+#
 #  This is the host-side stand-in for an on-device load test: it caught that the
 #  Session-1 INT8 encoder/VITS (ConvInteger with int8 weights) cannot be loaded by
 #  ORT <= 1.22, i.e. the app would have failed at model-load time on the phone.
 # =============================================================================
+import argparse
 import json
 import os
+import statistics
 import sys
 import time
 
@@ -55,20 +61,44 @@ def dummy_feeds(sess):
     return feeds
 
 
+def app_session_options(threads):
+    """The options VaaniSttEngine/VaaniTtsEngine set on the phone."""
+    so = ort.SessionOptions()
+    so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+    so.intra_op_num_threads = threads
+    so.add_session_config_entry("session.intra_op.allow_spinning", "1")
+    return so
+
+
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--models", nargs="*", help="graphs to check (default: every shipped asset)")
+    ap.add_argument("--runs", type=int, default=1, help="timed runs after one warm-up (median reported)")
+    ap.add_argument("--threads", type=int, default=0, help="0 = ORT default; the app uses 4")
+    ap.add_argument("--write", action="store_true", help="merge into evaluation_metrics.json")
+    args = ap.parse_args()
+    paths = args.models or [os.path.join(ASSETS, f) for f in sorted(os.listdir(ASSETS)) if f.endswith(".onnx")]
     report = {"onnxruntime": ort.__version__, "models": {}}
     ok = True
-    for name in sorted(f for f in os.listdir(ASSETS) if f.endswith(".onnx")):
-        path = os.path.join(ASSETS, name)
+    for path in paths:
+        name = os.path.basename(path)
         try:
             t0 = time.perf_counter()
-            sess = ort.InferenceSession(path, providers=["CPUExecutionProvider"])
+            so = app_session_options(args.threads) if args.threads else None
+            sess = ort.InferenceSession(path, so, providers=["CPUExecutionProvider"])
             load_ms = (time.perf_counter() - t0) * 1e3
-            t0 = time.perf_counter()
-            outs = sess.run(None, dummy_feeds(sess))
-            run_ms = (time.perf_counter() - t0) * 1e3
+            feeds = dummy_feeds(sess)
+            times = []
+            for _ in range(args.runs + (1 if args.runs > 1 else 0)):
+                t0 = time.perf_counter()
+                outs = sess.run(None, feeds)
+                times.append((time.perf_counter() - t0) * 1e3)
+            run_ms = statistics.median(times[1:] if len(times) > 1 else times)
             report["models"][name] = {"ok": True, "load_ms": round(load_ms), "run_ms": round(run_ms, 1),
-                                      "output0_shape": list(outs[0].shape)}
+                                      "output0_shape": list(outs[0].shape), "size_mb": round(os.path.getsize(path) / 1e6, 2)}
+            if args.runs > 1:
+                report["models"][name].update({"runs": args.runs, "threads": args.threads or "default",
+                                               "run_ms_min": round(min(times[1:]), 1)})
             print(f"  OK    {name:42s} load {load_ms:6.0f} ms  run {run_ms:7.1f} ms  out0 {list(outs[0].shape)}")
         except Exception as e:  # noqa: BLE001
             ok = False
@@ -76,7 +106,7 @@ def main():
             print(f"  FAIL  {name:42s} {str(e)[:160]}")
     report["all_ok"] = ok
     print(json.dumps({"onnxruntime": report["onnxruntime"], "all_ok": ok}))
-    if "--write" in sys.argv:                      # merge into speech_lab/evaluation_metrics.json
+    if args.write:                                 # merge into speech_lab/evaluation_metrics.json
         metrics = os.path.join(HERE, "evaluation_metrics.json")
         data = json.load(open(metrics, encoding="utf-8")) if os.path.exists(metrics) else {}
         data.setdefault("ort_runtime_compat", {})[ort.__version__] = report

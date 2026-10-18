@@ -95,7 +95,10 @@ data class AgentUiState(
     val runtimeReady: Boolean = false,
     val runtimeSummary: String = "",
     val languageMode: LanguageMode = LanguageMode.AUTO,
-    val model: LlmModel = LlmModels.GEMINI_FLASH_LITE,
+    /** The primary rung as requested (override applied) — shown in the top bar. */
+    val model: LlmModel = LlmModels.DEFAULT,
+    /** The primary as selected in Settings (no override). */
+    val baseModel: LlmModel = LlmModels.DEFAULT,
     val modelIdOverride: String = "",
     val cloudEnabled: Boolean = true,
     val cloudReady: Boolean = false,

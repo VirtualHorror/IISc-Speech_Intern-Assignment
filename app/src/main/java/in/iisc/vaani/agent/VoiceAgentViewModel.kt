@@ -64,9 +64,10 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
         AgentUiState(
             languageMode = settings.languageMode,
             model = settings.effectiveModel(),
+            baseModel = settings.model,
             modelIdOverride = settings.modelIdOverride,
             cloudEnabled = settings.cloudEnabled,
-            cloudReady = settings.hasKey(settings.model.provider),
+            cloudReady = settings.cascade().isNotEmpty(),
         ),
     )
     val ui: StateFlow<AgentUiState> = _ui.asStateFlow()
@@ -239,10 +240,11 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
         settings.languageMode = mode
         settings.cloudEnabled = cloudEnabled
         pipeline?.languageMode = mode
+        llm.resetHealth()                      // new keys / model: give every rung a fresh chance
         _ui.update {
             it.copy(
-                model = settings.effectiveModel(), modelIdOverride = settings.modelIdOverride, languageMode = mode,
-                cloudEnabled = cloudEnabled, cloudReady = settings.hasKey(model.provider),
+                model = settings.effectiveModel(), baseModel = settings.model, modelIdOverride = settings.modelIdOverride,
+                languageMode = mode, cloudEnabled = cloudEnabled, cloudReady = settings.cascade().isNotEmpty(),
             )
         }
         prewarm()
@@ -289,10 +291,7 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
     private fun onTranscript(r: SttResult, endNanos: Long) {
         val t = turn ?: return
         t.endOfSpeechNanos = endNanos
-        val devanagari = r.text.any { it in 'ऀ'..'ॿ' }
-        val display = HinglishCodec.cleanAsrText(
-            if (devanagari) HinglishCodec.normalizeSttTranscript(r.text, r.language) else r.text,
-        )
+        val display = HinglishCodec.displayTranscript(r.text, r.language)
         if (display.isBlank()) {
             notice("Didn't catch that — please try again.")
             setState(AgentState.IDLE)
@@ -309,14 +308,15 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
         }
         val wer = t.benchmark?.let { Metrics.wordErrorRate(it.text, display) }
         addFeed(FeedItem.User(ids.getAndIncrement(), display, r.language, r.sttLatencyMs,
-            if (devanagari) r.text else null, t.source, t.benchmark, wer))
+            r.text.takeIf { it.trim() != display }, t.source, t.benchmark, wer))
         _ui.update { it.copy(telemetry = t.telemetry) }
         respond(t, display, r.text)
     }
 
+    /** The rung that will answer first: the primary unless it is cooling down after a failure. */
     private fun activeEngineLabel(): String {
-        val m = settings.effectiveModel()
-        return if (settings.cloudEnabled && settings.hasKey(m.provider)) m.label else "On-device LocalResponder"
+        if (!settings.cloudEnabled) return "On-device LocalResponder"
+        return llm.liveTargets(settings.cascade()).firstOrNull()?.model?.label ?: "On-device LocalResponder"
     }
 
     private fun respond(t: Turn, transcript: String, rawAsr: String) {
@@ -328,10 +328,10 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
         val intents = LocalIntents.detect(understood)
         val assistantId = ids.getAndIncrement()
         t.assistantId = assistantId
-        val model = settings.effectiveModel()
-        val key = settings.keyFor(model.provider)
-        val useCloud = settings.cloudEnabled && key.isNotBlank()
-        addFeed(FeedItem.Assistant(assistantId, "", t.lang, engine = if (useCloud) model.label else "On-device LocalResponder"))
+        val targets = settings.cascade()
+        val useCloud = settings.cloudEnabled && targets.isNotEmpty()
+        val firstLabel = activeEngineLabel()
+        addFeed(FeedItem.Assistant(assistantId, "", t.lang, engine = firstLabel))
 
         llmJob = viewModelScope.launch(Dispatchers.Default) {
             val acoustic = StringBuilder()
@@ -341,10 +341,10 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
             )
             var stats: LlmStats? = null
             var error: String? = null
-            var engine = if (useCloud) model.label else "On-device LocalResponder"
+            var engine = firstLabel
             if (useCloud) {
                 val request = ChatRequest(
-                    model = model, apiKey = key,
+                    targets = targets,
                     systemPrompt = PromptBuilder.systemPrompt(snapshot),
                     userMessage = PromptBuilder.userMessage(transcript, t.lang, rawAsr.takeIf { it != transcript }),
                     history = history.toList(),
@@ -370,7 +370,7 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
             val actions = local?.actions ?: processor.actions.ifEmpty { backstopActions(intents, understood) }
             val cardIntents = intents + (local?.intents ?: emptySet())
             stats?.let { s ->
-                if (s.fellBack) engine = "${model.provider.label} ${s.modelId} (fallback)"
+                engine = if (s.fellBack) "${s.modelLabel} (failover)" else s.modelLabel
                 synchronized(t) {
                     t.telemetry = t.telemetry.copy(
                         llmTtftMs = s.ttftMs, llmTotalMs = s.totalMs, connectionReused = s.reusedConnection,
@@ -392,7 +392,7 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
                     streaming = false,
                     engine = engine,
                     telemetry = t.telemetry,
-                    note = error,
+                    note = error ?: stats?.takeIf { it.fellBack }?.let { "failover: " + it.failovers.joinToString("; ") },
                 )
             }
             for (a in actions) {
@@ -413,7 +413,7 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
                 setState(AgentState.IDLE)
                 _ui.update { it.copy(busyPrompt = null, highlightedPrompt = null) }
             }
-            logTelemetry(t, transcript, reply)
+            logTelemetry(t, transcript, reply, stats)
         }
     }
 
@@ -454,20 +454,21 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
         if (_ui.value.state == AgentState.STREAMING) setState(AgentState.SPEAKING)
     }
 
+    /** Warms every provider the cascade may use this turn (primary first), never sending a key. */
     private fun prewarm() {
         if (!settings.cloudEnabled) return
-        val m = settings.effectiveModel()
-        if (!settings.hasKey(m.provider)) return
-        llm.prewarmConnection(m.provider)
+        val providers = llm.liveTargets(settings.cascade()).map { it.model.provider }.distinct()
+        if (providers.isEmpty()) return
+        providers.forEach { llm.prewarmConnection(it) }
         viewModelScope.launch {
             delay(1500)
-            llm.lastPrewarm?.let { pw ->
+            llm.prewarmFor(providers.first())?.let { pw ->
                 _ui.update { it.copy(prewarm = if (pw.ok) "${pw.protocol} warm • ${pw.note}" else "pre-warm failed: ${pw.note}") }
             }
         }
     }
 
-    private fun logTelemetry(t: Turn, transcript: String, reply: String) {
+    private fun logTelemetry(t: Turn, transcript: String, reply: String, stats: LlmStats?) {
         val tm = t.telemetry
         val j = JSONObject()
             .put("source", tm.source).put("benchmark", t.benchmark?.text).put("lid", tm.lid).put("p_hi", tm.pHindi)
@@ -475,6 +476,7 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
             .put("tokens_per_s", tm.tokensPerSec).put("llm", tm.llmLabel).put("llm_ttft_ms", tm.llmTtftMs)
             .put("conn_reused", tm.connectionReused).put("tts_first_audio_ms", tm.ttsFirstAudioMs)
             .put("e2e_ms", tm.e2eLatencyMs).put("transcript", transcript).put("reply", reply)
+            .put("llm_model_id", stats?.modelId).put("failovers", stats?.failovers?.joinToString("; "))
         Log.i("VaaniTelemetry", j.toString())
     }
 

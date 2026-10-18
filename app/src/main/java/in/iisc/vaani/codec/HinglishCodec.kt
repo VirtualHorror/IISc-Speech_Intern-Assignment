@@ -308,12 +308,99 @@ object HinglishCodec {
         '५' to '5', '६' to '6', '७' to '7', '८' to '8', '९' to '9',
     )
 
-    /** Frequent Roman-side ASR homophone corrections (domain-scoped; no-ops on correct text). */
-    private val HOMOPHONE_FIX: Map<String, String> = mapOf(
-        "wether" to "weather", "wheather" to "weather", "fore cast" to "forecast",
-        "bengaluru" to "Bangalore", "banglore" to "Bangalore", "metting" to "meeting",
-        "schedual" to "schedule", "remainder" to "reminder", "alaram" to "alarm",
+    // =========================================================================
+    //  STT post-correction tables (Whisper-tiny's Roman Hinglish -> canonical).
+    // =========================================================================
+
+    /** Assistant-domain spellings Whisper gets wrong in either language (no-ops on correct text). */
+    private val EN_SPELLING_FIX: Map<String, String> = mapOf(
+        "wether" to "weather", "wheather" to "weather", "weathar" to "weather",
+        "forcast" to "forecast", "forcaste" to "forecast", "forecaste" to "forecast", "fourcast" to "forecast",
+        "banglor" to "Bangalore", "banglore" to "Bangalore", "bangalor" to "Bangalore", "bengalore" to "Bangalore",
+        "bengaluru" to "Bangalore", "bangaluru" to "Bangalore", "bengluru" to "Bangalore", "bangalure" to "Bangalore",
+        "metting" to "meeting", "miting" to "meeting", "meting" to "meeting", "meating" to "meeting", "mitting" to "meeting",
+        "schedual" to "schedule", "skedule" to "schedule", "shedule" to "schedule", "shedual" to "schedule",
+        "schedul" to "schedule", "skejul" to "schedule", "remainder" to "reminder", "reminer" to "reminder",
+        "remindar" to "reminder", "alaram" to "alarm", "alarum" to "alarm", "allarm" to "alarm", "calender" to "calendar",
+        "temprature" to "temperature", "tempreture" to "temperature",
     )
+
+    /** Split English domain words Whisper sometimes emits ("fore cast"), joined back. */
+    private val MERGE_TARGETS: Map<String, String> = listOf(
+        "forecast", "reminder", "schedule", "meeting", "tomorrow", "weather", "calendar", "temperature", "humidity",
+    ).associateWith { it } + ("bangalore" to "Bangalore")
+
+    /**
+     * Curated Hinglish spellings: fused verb compounds Whisper writes as one token, plus
+     * variants that collide with CMU English words (so the phonetic key may not touch them).
+     */
+    private val HI_VARIANTS: Map<String, String> = mapOf(
+        "hogaya" to "ho gaya", "hogya" to "ho gaya", "hongaya" to "ho gaya", "hogayi" to "ho gayi",
+        "hogai" to "ho gayi", "hogaye" to "ho gaye", "kardiya" to "kar diya", "kardia" to "kar diya",
+        "kardo" to "kar do", "kardi" to "kar di", "karde" to "kar de", "kardijiye" to "kar dijiye",
+        "bajya" to "baje", "suba" to "subah", "sham" to "shaam",
+    )
+
+    /** Spoken clock numbers, rewritten as digits only directly before "baje" ("saat baje" -> "7 baje"). */
+    private val HI_CLOCK_NUMBERS: Map<String, Int> = mapOf(
+        "ek" to 1, "do" to 2, "teen" to 3, "tin" to 3, "char" to 4, "chaar" to 4, "paanch" to 5, "panch" to 5,
+        "chhe" to 6, "chhah" to 6, "che" to 6, "chah" to 6, "saat" to 7, "sat" to 7, "saath" to 7, "sath" to 7,
+        "saad" to 7, "aath" to 8, "aat" to 8, "nau" to 9, "das" to 10, "dus" to 10, "gyarah" to 11, "gyara" to 11,
+        "barah" to 12, "bara" to 12, "baarah" to 12,
+    )
+    private val BAJE_FORMS = setOf("baje", "bajkar", "bajke")
+    private val TIME_WORDS = setOf("subah", "shaam", "raat", "dopahar", "savere", "baje", "bajkar", "bajke")
+    private val KAL_NEXT = TIME_WORDS + setOf("ka", "ki", "ke", "ko", "se", "tak", "mausam", "weather", "meeting", "alarm", "reminder")
+    private val KAL_PREV = setOf("aaj", "aur", "mujhe", "parson", "ya")
+    private val ACTION_NOUNS = setOf("alarm", "alarms", "reminder", "reminders", "timer", "meeting", "call", "notification")
+    private val SET_NEXT = setOf("karna", "karo", "kar", "karde", "kardo", "kijiye", "karke", "karenge", "kiya", "dijiye", "ho")
+    private val COMMA_TIME_WORDS = TIME_WORDS + setOf("kal", "aaj", "parson")
+
+    /** "set" as Whisper hears it in Hinglish: sate, seat, sat, saat, sett, isaate ... */
+    private val SET_LIKE = Regex("^[iea]?s(?:a|aa|e|ee|ai|ae|ea|ei|i)tt?[ea]?$")
+    private val LATIN_WORD = Regex("^[a-z]+$")
+
+    /** Hinglish canonical spellings (the keys of [HINGLISH_TO_DEV]) plus a few common words. */
+    private val HINGLISH_CANON: Set<String> by lazy {
+        HINGLISH_TO_DEV.keys + setOf("kaisa", "kaisi", "laga", "lagana", "savere", "bajke", "uthana", "jagana", "ghante")
+    }
+
+    /** English domain words that may stand as parts of a fused token ("merinext" -> "meri next"). */
+    private val EN_SPLIT_WORDS = setOf(
+        "alarm", "reminder", "meeting", "meetings", "schedule", "next", "set", "weather", "forecast", "today",
+        "tomorrow", "timer", "call", "lab", "review",
+    )
+
+    /**
+     * Hinglish phonetic key: folds what varies when Hinglish is written by ear — aspiration
+     * (bh/b, jh/j), vowel length (aa/a, ee/i), e~i and o~u quality, a post-vocalic h
+     * (subah/subha), -ay/-ey endings and gemination — so `mohjee`, `muje` and `mujhey` all
+     * meet `mujhe` at "muji".
+     */
+    internal fun phoneticKey(word: String): String {
+        val sb = StringBuilder(word.length)
+        for (c in word.lowercase()) if (c in 'a'..'z') sb.append(c)
+        var s = sb.toString()
+        for ((a, b) in KEY_DIGRAPHS) s = s.replace(a, b)
+        s = POST_VOCALIC_H.replace(s, "")
+        s = AY_END.replace(s, "e")
+        s = s.replace('o', 'u').replace('e', 'i')
+        val out = StringBuilder(s.length)
+        for (c in s) if (out.isEmpty() || out[out.length - 1] != c) out.append(c)
+        return out.toString()
+    }
+
+    private val KEY_DIGRAPHS = listOf(
+        "chh" to "c", "ch" to "c", "sh" to "s", "kh" to "k", "gh" to "g", "jh" to "j", "bh" to "b", "dh" to "d",
+        "th" to "t", "ph" to "f", "z" to "j", "w" to "v", "q" to "k", "x" to "ks", "ck" to "k", "c" to "k",
+    )
+    private val POST_VOCALIC_H = Regex("(?<=[aeiou])h(?=[^aeiou]|$)")
+    private val AY_END = Regex("(ay|ey)$")
+
+    /** phonetic key -> the canonical Hinglish word, only where exactly one canonical word has it. */
+    private val KEY_INDEX: Map<String, String> by lazy {
+        HINGLISH_CANON.groupBy { phoneticKey(it) }.filterValues { it.size == 1 }.mapValues { it.value.single() }
+    }
 
     // -------------------------------------------------------------------------
     //  Tokeniser: splits into word tokens and single punctuation marks, dropping
@@ -340,27 +427,210 @@ object HinglishCodec {
     private fun normalizeDigits(s: String): String =
         if (s.any { it in DEV_DIGIT }) s.map { DEV_DIGIT[it] ?: it }.joinToString("") else s
 
+    /**
+     * STT tokeniser: whitespace chunks with trailing punctuation peeled off, so `4:30`,
+     * `p.m.`, `7-7` and `today's` stay whole while `subah,` -> `subah` `,`.
+     */
+    private fun sttTokens(text: String): List<String> {
+        val out = ArrayList<String>()
+        for (chunk in text.trim().split(WHITESPACE)) {
+            var end = chunk.length
+            while (end > 0 && chunk[end - 1].toString() in PUNCT) end--
+            if (end > 0) out.add(chunk.substring(0, end))
+            for (k in end until chunk.length) out.add(chunk[k].toString())
+        }
+        return out
+    }
+
+    private val WHITESPACE = Regex("""\s+""")
+
     // =========================================================================
-    //  1. STT transcript normalisation: Devanagari -> Roman Hinglish/English.
+    //  1. STT transcript normalisation: Devanagari -> Roman Hinglish/English,
+    //     then the Hinglish phonetic post-corrector.
     // =========================================================================
-    @Suppress("UNUSED_PARAMETER")
+
+    /**
+     * Whisper-tiny writes Hindi either in Devanagari or, very often, as Roman Hinglish spelled
+     * by ear and fused across word boundaries ("Mohjee kaal subah, 7 bajyakal alarm sate
+     * karna hai"). This maps both to the app's canonical Roman Hinglish/English
+     * ("Mujhe kal subah 7 baje ka alarm set karna hai") with deterministic table passes:
+     *
+     *  1. script: Devanagari words via [DEV_TO_ROMAN], else [hunterianTransliterate];
+     *  2. split-word merge ("fore cast" -> "forecast") and assistant-domain spellings
+     *     ([EN_SPELLING_FIX]: skedule, miting, forcast, banglor, bengaluru ...);
+     *  3. Hinglish phonetic lexicon: curated variants, then [phoneticKey] — an unseen spelling
+     *     is rewritten only if exactly one canonical word shares its key and it is not a
+     *     real English (CMU) word;
+     *  4. compound splitter: fused tokens segmented into 2-3 known words by dynamic
+     *     programming ("kalsuba" -> "kal subah", "kyahai" -> "kya hai");
+     *  5. context rules for homophones: "kaal" -> "kal" next to a time word, "sate"/"seat"
+     *     -> "set" after alarm/reminder or before karna, number words before "baje" ->
+     *     digits, "baje kal alarm" -> "baje ka alarm", "subah, 7" -> "subah 7".
+     *
+     * With [languageHint] "en" only step 2 runs, unless the text itself is clearly Hinglish.
+     * Words already canonical (and English sentences Whisper produced) pass through untouched.
+     */
     fun normalizeSttTranscript(rawText: String, languageHint: String = "hi"): String {
         if (rawText.isBlank()) return ""
-        val out = ArrayList<String>()
-        for (raw in tokenize(rawText)) {
-            if (raw in PUNCT) { out.add(if (raw == "।" || raw == "॥") "." else raw); continue }
+        val letters = rawText.count { it.isLetter() && it.code < 0x0900 }
+        val shouting = letters >= 6 && rawText.count { it.isUpperCase() } >= letters * 0.7
+        val words = ArrayList<String>()
+        for (raw in sttTokens(rawText)) {
+            if (raw in PUNCT) { words.add(if (raw == "।" || raw == "॥") "." else raw); continue }
             val tok = normalizeDigits(raw)
-            when {
-                !isDevanagari(tok) -> out.add(applyHomophoneFix(tok))            // already Roman / numeric
-                DEV_TO_ROMAN.containsKey(tok) -> out.add(DEV_TO_ROMAN.getValue(tok))
-                else -> out.add(applyHomophoneFix(hunterianTransliterate(tok)))  // unseen Hindi word
-            }
+            words.add(when {
+                !isDevanagari(tok) -> if (shouting) tok.lowercase() else tok
+                else -> DEV_TO_ROMAN[tok] ?: hunterianTransliterate(tok)
+            })
         }
+        val merged = mergeSplitWords(words)
+        val out = if (languageHint != "en" || looksHinglish(merged)) correctHinglish(merged) else correctEnglish(merged)
+        if (shouting && out.isNotEmpty()) out[0] = out[0].replaceFirstChar { it.uppercaseChar() }
         return join(out)
     }
 
-    private fun applyHomophoneFix(token: String): String =
-        HOMOPHONE_FIX[token.lowercase()] ?: token
+    private fun looksHinglish(words: List<String>): Boolean {
+        var hi = 0
+        var en = 0
+        for (w in words) {
+            val lw = w.lowercase()
+            if (lw in HINGLISH_MARKERS) hi++
+            if (lw in ENGLISH_MARKERS) en++
+        }
+        return hi >= 2 && hi > en
+    }
+
+    /** Keeps [original]'s leading capital on a corrected word at the start of a sentence. */
+    private fun recase(original: String, fixed: String, sentenceStart: Boolean): String =
+        if (sentenceStart && original.firstOrNull()?.isUpperCase() == true) fixed.replaceFirstChar { it.uppercaseChar() } else fixed
+
+    private fun isSentenceStart(out: List<String>): Boolean =
+        out.isEmpty() || out.last() == "." || out.last() == "?" || out.last() == "!"
+
+    private fun mergeSplitWords(words: List<String>): List<String> {
+        val out = ArrayList<String>(words.size)
+        var i = 0
+        while (i < words.size) {
+            if (i + 1 < words.size && words[i].all { it.isLetter() } && words[i + 1].all { it.isLetter() }) {
+                val joined = (words[i] + words[i + 1]).lowercase()
+                val target = MERGE_TARGETS[joined] ?: EN_SPELLING_FIX[joined]?.takeIf { joined.length >= 6 }
+                if (target != null) { out.add(recase(words[i], target, isSentenceStart(out))); i += 2; continue }
+            }
+            out.add(words[i]); i++
+        }
+        return out
+    }
+
+    private fun correctEnglish(words: List<String>): MutableList<String> {
+        val out = ArrayList<String>(words.size)
+        for (w in words) {
+            val fix = EN_SPELLING_FIX[w.lowercase()]
+            out.add(if (fix == null) w else recase(w, fix, isSentenceStart(out)))
+        }
+        return out
+    }
+
+    private fun correctHinglish(words: List<String>): MutableList<String> {
+        val out = ArrayList<String>(words.size + 4)
+        for (w in words) {
+            val lw = w.lowercase()
+            val fix = if (LATIN_WORD.matches(lw) && lw !in HI_CLOCK_NUMBERS && lw != "kaal" && !SET_LIKE.matches(lw)) {
+                resolveHinglish(lw)
+            } else null
+            if (fix == null) { out.add(w); continue }
+            val start = isSentenceStart(out)
+            fix.split(' ').forEachIndexed { k, part -> out.add(if (k == 0) recase(w, part, start) else part) }
+        }
+        applyContextRules(out)
+        return out
+    }
+
+    /**
+     * Canonical replacement for one lower-case token, or null to keep it as written. The fuzzy
+     * steps (phonetic key, compound split) need the CMU lexicon to recognise real English words
+     * ("say" must not become "se"), so without it only the explicit tables apply.
+     */
+    private fun resolveHinglish(lw: String): String? {
+        HI_VARIANTS[lw]?.let { return it }
+        EN_SPELLING_FIX[lw]?.let { return it }
+        if (lw in HINGLISH_CANON || lw in ROMAN_TO_DEV) return null
+        val english = englishLexicon ?: return null
+        if (english.contains(lw)) return null                                    // a real English word
+        if (lw.length >= 3) KEY_INDEX[phoneticKey(lw)]?.let { return it }
+        return if (lw.length >= 5) segment(lw) else null
+    }
+
+    /** One part of a fused token: (canonical spelling, cost), exact words cheaper than key matches. */
+    private fun splitPart(p: String): Pair<String, Int>? = when {
+        p in HINGLISH_CANON || p in EN_SPLIT_WORDS -> p to 10
+        HI_VARIANTS[p]?.let { ' ' !in it } == true -> HI_VARIANTS.getValue(p) to 10
+        p.length >= 3 && englishLexicon?.contains(p) != true -> KEY_INDEX[phoneticKey(p)]?.let { it to 13 }
+        else -> null
+    }
+
+    /** Fewest-parts segmentation of a fused token into 2-3 known words (parts >= 2 letters). */
+    private fun segment(w: String): String? {
+        val n = w.length
+        val cost = IntArray(n + 1) { Int.MAX_VALUE }
+        val parts = IntArray(n + 1)
+        val back = IntArray(n + 1) { -1 }
+        val word = arrayOfNulls<String>(n + 1)
+        cost[0] = 0
+        for (i in 2..n) {
+            for (j in maxOf(0, i - 12)..i - 2) {
+                if (cost[j] == Int.MAX_VALUE || parts[j] >= 3) continue
+                val (canon, c) = splitPart(w.substring(j, i)) ?: continue
+                if (cost[j] + c < cost[i]) { cost[i] = cost[j] + c; parts[i] = parts[j] + 1; back[i] = j; word[i] = canon }
+            }
+        }
+        if (cost[n] == Int.MAX_VALUE || parts[n] < 2) return null
+        val result = ArrayList<String>(3)
+        var i = n
+        while (i > 0) { result.add(word[i]!!); i = back[i] }
+        return result.asReversed().joinToString(" ")
+    }
+
+    /** Homophones resolved only by their neighbours (see [normalizeSttTranscript] step 5). */
+    private fun applyContextRules(w: MutableList<String>) {
+        fun lw(i: Int): String? = w.getOrNull(i)?.lowercase()
+        fun start(i: Int) = i == 0 || w[i - 1] == "." || w[i - 1] == "?" || w[i - 1] == "!"
+        for (i in 0 until w.size - 1) {
+            val n = HI_CLOCK_NUMBERS[lw(i)] ?: continue
+            if (lw(i + 1) in BAJE_FORMS) w[i] = n.toString()
+        }
+        for (i in w.indices) {
+            if (lw(i) != "kaal") continue
+            val next = lw(i + 1)
+            if (next in KAL_NEXT || next?.firstOrNull()?.isDigit() == true || lw(i - 1) in KAL_PREV) {
+                w[i] = recase(w[i], "kal", start(i))
+            }
+        }
+        for (i in w.indices) {
+            val t = lw(i) ?: continue
+            if (t == "set" || !SET_LIKE.matches(t) || lw(i + 1) in BAJE_FORMS) continue
+            val nounBefore = (maxOf(0, i - 6) until i).any { lw(it) in ACTION_NOUNS }
+            val canonical = t in HINGLISH_CANON                                    // "saat" is also "seven"
+            if (nounBefore || (!canonical && lw(i + 1) in SET_NEXT)) w[i] = recase(w[i], "set", start(i))
+        }
+        for (i in 0 until w.size - 2) {
+            if (lw(i) == "baje" && lw(i + 1) == "kal" && lw(i + 2) in ACTION_NOUNS) w[i + 1] = "ka"
+        }
+        var i = 1
+        while (i < w.size - 1) {
+            val next = w[i + 1]
+            if (w[i] == "," && lw(i - 1) in COMMA_TIME_WORDS && (next.first().isDigit() || next.lowercase() in HI_CLOCK_NUMBERS)) {
+                w.removeAt(i)
+            } else i++
+        }
+    }
+
+    /**
+     * Raw on-device STT text -> the transcript the feed shows and the LLM receives:
+     * [normalizeSttTranscript] (script + Hinglish phonetic correction) then [cleanAsrText].
+     * [language] is the step-0 LID decision ("en" / "hi").
+     */
+    fun displayTranscript(raw: String, language: String): String =
+        cleanAsrText(normalizeSttTranscript(raw, language))
 
     private val RE_NUM_STUTTER = Regex("""\b(\d{1,2})(?:\s*-\s*\1\b)+""")
     private val RE_WORD_STUTTER = Regex("""\b(\p{L}+)(?:\s+\1\b)+""", RegexOption.IGNORE_CASE)

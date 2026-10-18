@@ -15,6 +15,13 @@
 #    --> step-0 2-way language ID (<|en|> vs <|hi|>) on the decoder's first logits
 #    --> greedy decode, cache-free (Session 1) vs KV-cached decoder_with_past (Session 2)
 #    --> transcripts, CER/WER, RTF, ms/token  ->  speech_lab/evaluation_metrics.json
+#    --> the app's display pipeline (HinglishCodec.displayTranscript, run through Gradle:
+#        app/src/test/.../SttDisplayExportTest.kt) -> "display" CER/WER of the exact text
+#        the feed shows and the LLM receives, against the reference Roman text
+#
+#  --ab-encoders int8=a.onnx,fp32=b.onnx  runs a paired precision study instead: every
+#  encoder transcribes the SAME seeded TTS audio, so CER differences are not VITS noise
+#  (-> "encoder_precision_ab").
 #
 #  Optional: if `espeakng_loader` is installed, the Kotlin G2P is scored against
 #  espeak-ng (the phonemizer the Piper hi_IN voice was trained with). espeak-ng is
@@ -23,7 +30,9 @@
 #  All timings are measured on the HOST CPU (see "host" in the output); the app's
 #  HUD reports the live on-device numbers.
 #
-#  Usage:  python speech_lab/verify_closed_loop.py [--runs 3] [--no-gradle]
+#  Usage:  python speech_lab/verify_closed_loop.py [--runs 3] [--no-gradle] [--seed 1234]
+#          python speech_lab/verify_closed_loop.py --ab-encoders int8=A.onnx,fp16w=B.onnx --runs 6
+#          python speech_lab/verify_closed_loop.py --rescore-display   # post-corrector change only
 # =============================================================================
 import argparse
 import ctypes
@@ -48,6 +57,8 @@ REPO = os.path.abspath(os.path.join(HERE, ".."))
 ASSETS = os.path.join(REPO, "app", "src", "main", "assets", "models")
 BUILD = os.path.join(REPO, "app", "build", "vaani")
 FIXTURE = os.path.join(BUILD, "closed_loop_fixture.json")
+RAW_TX = os.path.join(BUILD, "closed_loop_raw_transcripts.json")
+DISPLAY_TX = os.path.join(BUILD, "closed_loop_display_transcripts.json")
 CPP_SRC = os.path.join(REPO, "app", "src", "main", "cpp", "vaani_dsp_neon.cpp")
 HOST_DSP = os.path.join(BUILD, "libvaani_dsp_host.so")
 METRICS = os.path.join(HERE, "evaluation_metrics.json")
@@ -77,6 +88,25 @@ def regenerate_fixture():
     r = subprocess.run(["bash", "-c", cmd], cwd=REPO, capture_output=True, text=True)
     if r.returncode != 0:
         log("  (ClosedLoopFixtureTest reported failures — fixture still written; see report)")
+
+
+def kotlin_display(items):
+    """[{key, raw, lang}] -> {key: {display, us}} computed by the app's own Kotlin
+    HinglishCodec.displayTranscript (SttDisplayExportTest), never by a Python port."""
+    os.makedirs(BUILD, exist_ok=True)
+    with open(RAW_TX, "w", encoding="utf-8") as f:
+        json.dump(items, f, ensure_ascii=False)
+    if os.path.exists(DISPLAY_TX):
+        os.remove(DISPLAY_TX)
+    cmd = ("source $HOME/.vaani_env 2>/dev/null; ./gradlew :app:testDebugUnitTest "
+           "--tests 'in.iisc.vaani.lab.SttDisplayExportTest' --rerun -q --console=plain")
+    log(f"normalising {len(items)} transcripts with the Kotlin display pipeline via Gradle ...")
+    r = subprocess.run(["bash", "-c", cmd], cwd=REPO, capture_output=True, text=True)
+    os.remove(RAW_TX)
+    if r.returncode != 0 or not os.path.exists(DISPLAY_TX):
+        log("  Kotlin display export failed:", (r.stdout + r.stderr)[-800:])
+        return None
+    return {o["key"]: o for o in json.load(open(DISPLAY_TX, encoding="utf-8"))}
 
 
 def build_host_dsp():
@@ -385,6 +415,40 @@ def score(hyp, utt):
     return {"cer": round(cer, 4), "wer": round(wer, 4), "space": space, "ref_norm": ref, "hyp_norm": h}
 
 
+def score_display(display, utt):
+    """CER/WER of the app's display transcript against the reference Roman text."""
+    ref, h = norm_lat(utt["text"]), norm_lat(display)
+    cer = edit_distance(list(ref.replace(" ", "")), list(h.replace(" ", ""))) / max(1, len(ref.replace(" ", "")))
+    wer = edit_distance(ref.split(), h.split()) / max(1, len(ref.split()))
+    return {"cer": round(cer, 4), "wer": round(wer, 4), "ref_norm": ref, "hyp_norm": h}
+
+
+def by_lang(values_with_lang):
+    out = {}
+    for lang in ("en", "hi"):
+        v = [x for x, lg in values_with_lang if lg == lang]
+        out[lang] = summarize(v)
+    out["all"] = summarize([x for x, _ in values_with_lang])
+    return out
+
+
+def synthesize(tts, utt):
+    """Piper layout: one VITS call per sentence, 0.2 s gaps, peak-normalised to 0.95."""
+    t0 = time.perf_counter()
+    pieces, first_audio_ms = [], None
+    for ids in utt["sentence_ids"]:
+        x = np.array([ids], dtype=np.int64)
+        y = tts.run(None, {"input": x, "input_lengths": np.array([x.shape[1]], np.int64),
+                           "scales": np.array(TTS_SCALES, np.float32)})[0].reshape(-1)
+        if first_audio_ms is None:
+            first_audio_ms = (time.perf_counter() - t0) * 1e3
+        pieces += [y, np.zeros(int(SENTENCE_SILENCE_S * TTS_SR), np.float32)]
+    tts_ms = (time.perf_counter() - t0) * 1e3
+    audio22 = np.concatenate(pieces[:-1]) if pieces else np.zeros(0, np.float32)
+    peak = float(np.max(np.abs(audio22))) if audio22.size else 0.0
+    return audio22 * (0.95 / max(peak, 1e-3)), tts_ms, first_audio_ms, peak
+
+
 # ---------------------------------------------------------------------------
 #  espeak-ng parity (optional host-side measuring stick)
 # ---------------------------------------------------------------------------
@@ -475,7 +539,14 @@ def main():
     ap.add_argument("--label", default="session2")
     ap.add_argument("--encoder", default=os.path.join(ASSETS, "vaani_stt_encoder.int8.onnx"))
     ap.add_argument("--tts", default=os.path.join(ASSETS, "vaani_tts_vits.fp16.onnx"))
+    ap.add_argument("--seed", type=int, default=1234, help="ORT RNG seed (VITS noise) for reproducible audio")
+    ap.add_argument("--ab-encoders", default="", help="name=path,... : paired encoder precision study")
+    ap.add_argument("--rescore-display", action="store_true",
+                    help="re-run only the Kotlin display pass on the transcripts of the last full run")
     args = ap.parse_args()
+    if args.rescore_display:
+        return rescore_display(args)
+    ort.set_seed(args.seed)
 
     if not args.no_gradle or not os.path.exists(FIXTURE):
         regenerate_fixture()
@@ -501,6 +572,9 @@ def main():
     tts.run(None, {"input": np.array([[1, 0, 14, 0, 2]], np.int64),
                    "input_lengths": np.array([5], np.int64), "scales": np.array(TTS_SCALES, np.float32)})
 
+    if args.ab_encoders:
+        return run_encoder_ab(args, fixture, filters, dsp, stt, tts)
+
     wav_dir = os.path.join(BUILD, "closed_loop_wavs")
     os.makedirs(wav_dir, exist_ok=True)
     rows = []
@@ -509,19 +583,7 @@ def main():
         runs = []
         for r in range(args.runs):
             # ---- TTS (sentence by sentence, Piper layout) ----
-            t0 = time.perf_counter()
-            pieces, first_audio_ms = [], None
-            for ids in utt["sentence_ids"]:
-                x = np.array([ids], dtype=np.int64)
-                y = tts.run(None, {"input": x, "input_lengths": np.array([x.shape[1]], np.int64),
-                                   "scales": np.array(TTS_SCALES, np.float32)})[0].reshape(-1)
-                if first_audio_ms is None:
-                    first_audio_ms = (time.perf_counter() - t0) * 1e3
-                pieces += [y, np.zeros(int(SENTENCE_SILENCE_S * TTS_SR), np.float32)]
-            tts_ms = (time.perf_counter() - t0) * 1e3
-            audio22 = np.concatenate(pieces[:-1]) if pieces else np.zeros(0, np.float32)
-            peak = float(np.max(np.abs(audio22))) if audio22.size else 0.0
-            audio22 = audio22 * (0.95 / max(peak, 1e-3))              # peak-normalise like Piper
+            audio22, tts_ms, first_audio_ms, peak = synthesize(tts, utt)
             audio_sec = len(audio22) / TTS_SR
 
             # ---- resample 22.05k -> 16k (C++ sinc; scipy for reference) ----
@@ -577,6 +639,9 @@ def main():
             f"forced {statistics.fmean(x['forced_score']['cer'] for x in runs):.3f} | "
             f"{best['forced_text']}")
 
+    # ---- the app's display pipeline (Kotlin) on every auto-language transcript ----
+    apply_display(rows)
+
     # ---- aggregate ----
     def per_token(run, key):
         if key == "kv":
@@ -584,8 +649,14 @@ def main():
             return run["forced"]["decode_ms"] / max(1, n)
         return run["cache_free_ms"] / max(1, run["cache_free_calls"])
 
+    # CER/WER/LID: the original corpus only (comparable with earlier sessions); the held-out
+    # sentences (kind "heldout", written before the post-corrector saw any output) separately.
+    # Latency statistics use every run.
+    held = [row for row in rows if row["utt"].get("kind") == "heldout"]
+    corpus = [row for row in rows if row["utt"].get("kind") != "heldout"]
     all_runs = [x for row in rows for x in row["runs"]]
-    lid_ok = [x["auto"]["detected"] == row["utt"]["lang"] for row in rows for x in row["runs"]]
+    corpus_runs = [x for row in corpus for x in row["runs"]]
+    lid_ok = [x["auto"]["detected"] == row["utt"]["lang"] for row in corpus for x in row["runs"]]
     same_tokens = [x["cache_free_text"] == x["forced_text"] for x in all_runs]
     cf_ms = summarize([x["cache_free_ms"] for x in all_runs])
     kv_ms = summarize([x["forced"]["decode_ms"] for x in all_runs])
@@ -618,11 +689,15 @@ def main():
         },
         "resampler_22k05_to_16k": {"snr_db_vs_scipy_resample_poly": summarize(resample_snr)},
         "stt": {
+            "scope": f"CER/WER/LID over the {len(corpus)}-utterance corpus; held-out set in 'heldout'",
             "lid_two_way_accuracy_pct": round(100.0 * sum(lid_ok) / len(lid_ok), 2),
-            "auto_language": {"cer": summarize([x["auto_score"]["cer"] for x in all_runs]),
-                              "wer": summarize([x["auto_score"]["wer"] for x in all_runs])},
-            "forced_language": {"cer": summarize([x["forced_score"]["cer"] for x in all_runs]),
-                                "wer": summarize([x["forced_score"]["wer"] for x in all_runs])},
+            "auto_language": {"cer": summarize([x["auto_score"]["cer"] for x in corpus_runs]),
+                              "wer": summarize([x["auto_score"]["wer"] for x in corpus_runs])},
+            "forced_language": {"cer": summarize([x["forced_score"]["cer"] for x in corpus_runs]),
+                                "wer": summarize([x["forced_score"]["wer"] for x in corpus_runs])},
+            "raw_cer_by_language": by_lang([(x["forced_score"]["cer"], row["utt"]["lang"])
+                                            for row in corpus for x in row["runs"]]),
+            **display_blocks(corpus, held),
             "encoder_ms": summarize([x["enc_ms"] for x in all_runs]),
             "lid_step0_ms": summarize([x["auto"]["lid_ms"] for x in all_runs]),
             "decoder": {
@@ -644,7 +719,7 @@ def main():
             "raw_peak_amplitude": summarize([x["raw_peak"] for x in all_runs]),
         },
         "utterances": [{
-            "id": row["utt"]["id"], "lang": row["utt"]["lang"], "text": row["utt"]["text"],
+            "id": row["utt"]["id"], "kind": row["utt"].get("kind"), "lang": row["utt"]["lang"], "text": row["utt"]["text"],
             "acoustic_devanagari": row["utt"]["acoustic_devanagari"],
             "audio_sec": round(row["best"]["audio_sec"], 3),
             "lid_detected": [x["auto"]["detected"] for x in row["runs"]],
@@ -654,6 +729,8 @@ def main():
             "cer_forced": [x["forced_score"]["cer"] for x in row["runs"]],
             "wer_forced": [x["forced_score"]["wer"] for x in row["runs"]],
             "cer_auto": [x["auto_score"]["cer"] for x in row["runs"]],
+            "transcripts_display": [x.get("display_text") for x in row["runs"]],
+            "cer_display": [(x.get("display_score") or {}).get("cer") for x in row["runs"]],
             "tts_rtf": round(statistics.fmean(x["tts_rtf"] for x in row["runs"]), 4),
             "stt_ms": round(statistics.fmean(x["stt_ms"] for x in row["runs"]), 1),
             "tokens": [len(x["forced"]["tokens"]) for x in row["runs"]],
@@ -669,6 +746,10 @@ def main():
         "forced_cer_mean": closed["stt"]["forced_language"]["cer"]["mean"],
         "auto_cer_mean": closed["stt"]["auto_language"]["cer"]["mean"],
         "lid_accuracy_pct": closed["stt"]["lid_two_way_accuracy_pct"],
+        "raw_cer_hi": (closed["stt"]["raw_cer_by_language"]["hi"] or {}).get("mean"),
+        **history_display(closed),
+        "encoder": closed["models"]["encoder"],
+        "runs_per_utterance": args.runs,
     }
     report["closed_loop"] = closed
     tmp = args.out + ".tmp"
@@ -676,14 +757,235 @@ def main():
         json.dump(report, f, indent=2, ensure_ascii=False, default=float)
     os.replace(tmp, args.out)                      # atomic: never leave a half-written report
     log(f"wrote {args.out}")
-    log(json.dumps({k: closed["stt"][k] for k in ("lid_two_way_accuracy_pct", "auto_language", "forced_language")},
-                   ensure_ascii=False))
+    log(json.dumps({k: closed["stt"][k] for k in ("lid_two_way_accuracy_pct", "auto_language", "forced_language",
+                                                  "raw_cer_by_language")}, ensure_ascii=False))
+    log("display:", json.dumps(closed["stt"]["display_transcript"], ensure_ascii=False))
+    log("post-corrector:", json.dumps(closed["stt"]["post_corrector"], ensure_ascii=False))
+    log("heldout:", json.dumps({k: v for k, v in (closed["stt"]["heldout"] or {}).items() if k != "samples"},
+                               ensure_ascii=False))
+    for row in rows:
+        log(f"  {row['utt']['id']:6s} display: {row['runs'][0].get('display_text')}")
     log("decoder:", json.dumps(closed["stt"]["decoder"], ensure_ascii=False))
     log("mel:", json.dumps(closed["mel_frontend"], ensure_ascii=False))
     log("resampler:", json.dumps(closed["resampler_22k05_to_16k"]), "tts:", json.dumps(closed["tts"]))
     if parity:
         log("espeak parity:", {k: parity[k] for k in ("words", "exact_match_pct", "segmental_match_pct",
                                                       "phoneme_error_rate_pct")})
+
+
+def apply_display(rows):
+    """Attaches the app's display transcript (Kotlin) and its scores to every run."""
+    disp = kotlin_display([{"key": f"{row['utt']['id']}|{i}", "raw": x["auto_text"], "lang": x["auto"]["lang"]}
+                           for row in rows for i, x in enumerate(row["runs"])]) or {}
+    for row in rows:
+        for i, x in enumerate(row["runs"]):
+            d = disp.get(f"{row['utt']['id']}|{i}")
+            x["display_text"] = d["display"] if d else None
+            x["display_us"] = d["us"] if d else None
+            x["display_score"] = score_display(d["display"], row["utt"]) if d else None
+    return bool(disp)
+
+
+def display_blocks(corpus, held):
+    runs = [x for row in corpus + held for x in row["runs"]]
+    return {
+        "display_transcript": {
+            "what": ("HinglishCodec.displayTranscript(raw, detected language): the text the app shows and "
+                     "sends to the LLM, scored in Roman script against the reference text"),
+            "cer_by_language": by_lang([(x["display_score"]["cer"], row["utt"]["lang"])
+                                        for row in corpus for x in row["runs"] if x.get("display_score")]),
+            "wer_by_language": by_lang([(x["display_score"]["wer"], row["utt"]["lang"])
+                                        for row in corpus for x in row["runs"] if x.get("display_score")]),
+            "normalizer_us_per_call": summarize([x["display_us"] for x in runs if x.get("display_us") is not None]),
+        },
+        "post_corrector": {
+            "what": ("paired raw -> display CER on the same transcripts (auto language, Latin-script raw "
+                     "output only, so both sides are scored against the same Roman reference)"),
+            "corpus": post_corrector_effect(corpus),
+            "heldout": post_corrector_effect(held),
+        },
+        "heldout": heldout_block(held),
+    }
+
+
+def history_display(closed):
+    st = closed["stt"]
+    return {
+        "display_cer_mean": (st["display_transcript"]["cer_by_language"]["all"] or {}).get("mean"),
+        "display_cer_hi": (st["display_transcript"]["cer_by_language"]["hi"] or {}).get("mean"),
+        "heldout_raw_cer_mean": ((st["heldout"] or {}).get("raw_auto_cer", {}).get("all") or {}).get("mean"),
+        "heldout_display_cer_mean": ((st["heldout"] or {}).get("display_cer", {}).get("all") or {}).get("mean"),
+    }
+
+
+def rescore_display(args):
+    """Display pass only, on the stored transcripts of the last full run (same seeded audio and
+    decoding), e.g. after a post-corrector change: no TTS/STT re-run needed."""
+    report = json.load(open(args.out, encoding="utf-8"))
+    closed = report["closed_loop"]
+    rows = []
+    for u in closed["utterances"]:
+        runs = [{"auto_text": raw, "auto": {"detected": lid, "lang": lid},
+                 "auto_score": {"cer": cer, "space": "devanagari" if is_devanagari(raw) else "latin"}}
+                for raw, lid, cer in zip(u["transcripts_auto"], u["lid_detected"], u["cer_auto"])]
+        rows.append({"utt": {"id": u["id"], "kind": u.get("kind"), "lang": u["lang"], "text": u["text"]}, "runs": runs})
+    if not apply_display(rows):
+        sys.exit("display pass failed")
+    for row, u in zip(rows, closed["utterances"]):
+        u["transcripts_display"] = [x["display_text"] for x in row["runs"]]
+        u["cer_display"] = [x["display_score"]["cer"] for x in row["runs"]]
+    held = [row for row in rows if row["utt"].get("kind") == "heldout"]
+    corpus = [row for row in rows if row["utt"].get("kind") != "heldout"]
+    closed["stt"].update(display_blocks(corpus, held))
+    closed["display_rescored_at"] = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+    report["closed_loop_history"].setdefault(closed["label"], {}).update(history_display(closed))
+    tmp = args.out + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, ensure_ascii=False, default=float)
+    os.replace(tmp, args.out)
+    log(f"rescored display transcripts -> {args.out}")
+    log("post-corrector:", json.dumps(closed["stt"]["post_corrector"], ensure_ascii=False))
+
+
+def paired_change(pairs):
+    """[(before, after)] -> mean(after - before) with a 95% bootstrap CI."""
+    d = np.array([b - a for a, b in pairs], dtype=np.float64)
+    if d.size == 0:
+        return None
+    rng = np.random.default_rng(0)
+    boots = d[rng.integers(0, d.size, size=(2000, d.size))].mean(axis=1)
+    return {"mean": round(float(d.mean()), 4), "ci95": [round(float(np.percentile(boots, 2.5)), 4),
+                                                       round(float(np.percentile(boots, 97.5)), 4)],
+            "pairs": int(d.size), "improved": int((d < 0).sum()), "worsened": int((d > 0).sum())}
+
+
+def post_corrector_effect(rows):
+    """Raw (auto) vs display CER per language on the same transcripts."""
+    out = {}
+    for lang in ("en", "hi", "all"):
+        pairs = [(x["auto_score"]["cer"], x["display_score"]["cer"]) for row in rows for x in row["runs"]
+                 if (lang == "all" or row["utt"]["lang"] == lang) and x.get("display_score")
+                 and x["auto_score"]["space"] == "latin"]
+        if pairs:
+            out[lang] = {"raw_cer": round(statistics.fmean(a for a, _ in pairs), 4),
+                         "display_cer": round(statistics.fmean(b for _, b in pairs), 4),
+                         "change": paired_change(pairs)}
+    out["devanagari_raw_outputs_excluded"] = sum(1 for row in rows for x in row["runs"] if x["auto_score"]["space"] != "latin")
+    return out
+
+
+def heldout_block(rows):
+    if not rows:
+        return None
+    runs = [(x, row) for row in rows for x in row["runs"]]
+    return {
+        "utterances": [row["utt"]["id"] for row in rows],
+        "lid_two_way_accuracy_pct": round(100.0 * statistics.fmean(x["auto"]["detected"] == r["utt"]["lang"] for x, r in runs), 2),
+        "raw_auto_cer": by_lang([(x["auto_score"]["cer"], r["utt"]["lang"]) for x, r in runs]),
+        "display_cer": by_lang([(x["display_score"]["cer"], r["utt"]["lang"]) for x, r in runs if x.get("display_score")]),
+        "display_wer": by_lang([(x["display_score"]["wer"], r["utt"]["lang"]) for x, r in runs if x.get("display_score")]),
+        "samples": {row["utt"]["id"]: {"ref": row["utt"]["text"], "raw": row["runs"][0]["auto_text"],
+                                       "display": row["runs"][0].get("display_text")} for row in rows},
+    }
+
+
+def paired_delta(rows, base, other, key):
+    """Mean paired CER difference (other - base) over identical audio, 95% bootstrap CI."""
+    a = {(x["utt"], x["run"]): x[key] for x in rows if x["enc"] == base and x.get(key) is not None}
+    b = {(x["utt"], x["run"]): x[key] for x in rows if x["enc"] == other and x.get(key) is not None}
+    d = np.array([b[k] - a[k] for k in a if k in b], dtype=np.float64)
+    if d.size == 0:
+        return None
+    rng = np.random.default_rng(0)
+    boots = d[rng.integers(0, d.size, size=(2000, d.size))].mean(axis=1)
+    return {"mean": round(float(d.mean()), 4), "ci95": [round(float(np.percentile(boots, 2.5)), 4),
+                                                       round(float(np.percentile(boots, 97.5)), 4)],
+            "pairs": int(d.size), "better": int((d < 0).sum()), "worse": int((d > 0).sum())}
+
+
+def run_encoder_ab(args, fixture, filters, dsp, stt, tts):
+    """Paired encoder precision study: each encoder transcribes the same seeded TTS audio."""
+    encs = []
+    for spec in args.ab_encoders.split(","):
+        name, path = spec.split("=", 1)
+        sess = make_session(path, args.threads)
+        zeros = ort.OrtValue.ortvalue_from_numpy(np.zeros((1, N_MELS, N_FRAMES), np.float32))
+        sess.run_with_ort_values(["last_hidden_state"], {"input_features": zeros})           # warm-up
+        encs.append((name, path, sess))
+    rows = []
+    for utt in fixture["utterances"]:
+        for r in range(args.runs):
+            audio22, _, _, _ = synthesize(tts, utt)
+            audio_sec = len(audio22) / TTS_SR
+            audio16 = dsp.resample(audio22, TTS_SR, STT_SR) if dsp else resample_poly(audio22, 320, 441).astype(np.float32)
+            mel = dsp.log_mel(audio16, filters)[0] if dsp else whisper_log_mel_reference(audio16, filters)
+            feed = {"input_features": ort.OrtValue.ortvalue_from_numpy(mel)}
+            for name, _, sess in encs:
+                t0 = time.perf_counter()
+                hidden = sess.run_with_ort_values(["last_hidden_state"], feed)[0]
+                enc_ms = (time.perf_counter() - t0) * 1e3
+                auto = stt.decode_kv(hidden, "auto", audio_sec)
+                forced = auto if auto["lang"] == utt["lang"] else stt.decode_kv(hidden, utt["lang"], audio_sec)
+                forced_text = stt.vocab.decode(forced["tokens"])
+                rows.append({"enc": name, "utt": utt["id"], "lang": utt["lang"], "run": r, "enc_ms": enc_ms,
+                             "lid_ok": auto["detected"] == utt["lang"], "auto_lang": auto["lang"],
+                             "auto_text": stt.vocab.decode(auto["tokens"]), "forced_text": forced_text,
+                             "raw_cer": score(forced_text, utt)["cer"]})
+        line = " | ".join(f"{n} {statistics.fmean(x['raw_cer'] for x in rows if x['enc'] == n and x['utt'] == utt['id']):.3f}"
+                          for n, _, _ in encs)
+        log(f"{utt['id']:6s} raw CER  {line}")
+
+    disp = kotlin_display([{"key": f"{x['enc']}|{x['utt']}|{x['run']}", "raw": x["auto_text"], "lang": x["auto_lang"]}
+                           for x in rows]) or {}
+    utts = {u["id"]: u for u in fixture["utterances"]}
+    for x in rows:
+        d = disp.get(f"{x['enc']}|{x['utt']}|{x['run']}")
+        x["display_text"] = d["display"] if d else None
+        x["display_cer"] = score_display(d["display"], utts[x["utt"]])["cer"] if d else None
+
+    base = encs[0][0]
+    summary = {}
+    for name, path, _ in encs:
+        rs = [x for x in rows if x["enc"] == name]
+        summary[name] = {
+            "file": os.path.basename(path), "size_mb": round(os.path.getsize(path) / 1e6, 2),
+            "encoder_ms_host": summarize([x["enc_ms"] for x in rs]),
+            "lid_accuracy_pct": round(100.0 * sum(x["lid_ok"] for x in rs) / len(rs), 2),
+            "raw_cer_forced_language": by_lang([(x["raw_cer"], x["lang"]) for x in rs]),
+            "display_cer": by_lang([(x["display_cer"], x["lang"]) for x in rs if x["display_cer"] is not None]),
+        }
+        if name != base:
+            summary[name]["paired_vs_" + base] = {
+                "raw_cer_hi": paired_delta([x for x in rows if x["lang"] == "hi"], base, name, "raw_cer"),
+                "raw_cer_en": paired_delta([x for x in rows if x["lang"] == "en"], base, name, "raw_cer"),
+                "display_cer_all": paired_delta(rows, base, name, "display_cer"),
+            }
+        log(f"{name:8s} raw CER {json.dumps(summary[name]['raw_cer_forced_language'])} "
+            f"display CER {json.dumps(summary[name]['display_cer'])} enc {summary[name]['encoder_ms_host']}")
+    study = {
+        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "method": (f"paired: {len(fixture['utterances'])} utterances x {args.runs} seeded VITS samples (seed {args.seed}); "
+                   "every encoder transcribes the identical audio/mel; same INT8 decoders + KV cache; "
+                   "paired deltas = mean(other - base) with 95% bootstrap CI over utterance-samples; "
+                   "encoder_ms on this host with onnxruntime " + ort.__version__),
+        "host": {"cpu_model": cpu_model(), "threads": args.threads},
+        "baseline": base,
+        "encoders": summary,
+        "samples_first_run": {name: {x["utt"]: {"raw": x["forced_text"], "display": x["display_text"]}
+                                     for x in rows if x["enc"] == name and x["run"] == 0}
+                              for name, _, _ in encs},
+    }
+    report = json.load(open(args.out, encoding="utf-8")) if os.path.exists(args.out) else {}
+    report["encoder_precision_ab"] = study
+    tmp = args.out + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, ensure_ascii=False, default=float)
+    os.replace(tmp, args.out)
+    log(f"wrote {args.out} (encoder_precision_ab)")
+    for name in summary:
+        for k, v in summary[name].items():
+            if k.startswith("paired_vs_"):
+                log(f"{name} {k}: {json.dumps(v)}")
 
 
 def cpu_model():

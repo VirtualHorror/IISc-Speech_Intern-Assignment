@@ -407,7 +407,7 @@ private fun UserBubble(item: FeedItem.User) {
             Spacer(Modifier.height(4.dp))
             Text(item.text, style = MaterialTheme.typography.bodyLarge, color = Vaani.Paper)
             item.rawAsr?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall.copy(fontFamily = PlexDevanagari), color = Vaani.Fog)
+                Text("raw ASR · $it", style = MaterialTheme.typography.bodySmall.copy(fontFamily = PlexDevanagari), color = Vaani.Fog)
             }
         }
     }

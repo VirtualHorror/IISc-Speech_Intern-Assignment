@@ -18,6 +18,13 @@ fun secret(name: String): String {
     return "\"" + raw.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 }
 
+// Release signing: a keystore OUTSIDE the repo, described in the git-ignored local.properties
+// (VAANI_RELEASE_STORE_FILE / _STORE_PASSWORD / _KEY_ALIAS / _KEY_PASSWORD). Without one the
+// release build is signed with the debug key, so `assembleRelease` always yields an installable
+// APK for evaluators building from source.
+val releaseStore: File? = localProps.getProperty("VAANI_RELEASE_STORE_FILE")?.trim()
+    ?.let { file(it) }?.takeIf { it.isFile }
+
 android {
     // Package root is `in.iisc.vaani` (in = India TLD, iisc = Indian Institute of Science).
     namespace = "in.iisc.vaani"
@@ -28,8 +35,9 @@ android {
         applicationId = "in.iisc.vaani"
         minSdk = 28
         targetSdk = 34
-        versionCode = 2
-        versionName = "2.0.0-session2"
+        versionCode = 3
+        versionName = "3.0.0-session3"
+        manifestPlaceholders["appLabel"] = "VaaniEdge"
 
         buildConfigField("String", "DEFAULT_GROQ_API_KEY", secret("GROQ_API_KEY"))
         buildConfigField("String", "DEFAULT_GEMINI_API_KEY", secret("GEMINI_API_KEY"))
@@ -63,16 +71,35 @@ android {
         }
     }
 
+    signingConfigs {
+        if (releaseStore != null) {
+            create("release") {
+                storeFile = releaseStore
+                storePassword = localProps.getProperty("VAANI_RELEASE_STORE_PASSWORD")
+                keyAlias = localProps.getProperty("VAANI_RELEASE_KEY_ALIAS")
+                keyPassword = localProps.getProperty("VAANI_RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             isMinifyEnabled = false
+            // Installs next to the release build (different id + label, no signature clash).
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            manifestPlaceholders["appLabel"] = "VaaniEdge (debug)"
         }
         release {
-            isMinifyEnabled = false
+            // R8: shrink + optimise Kotlin/Compose bytecode; JNI and ONNX Runtime are kept by
+            // proguard-rules.pro. Models stay uncompressed assets (noCompress below).
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 

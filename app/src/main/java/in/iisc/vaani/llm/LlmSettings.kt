@@ -21,10 +21,12 @@ class LlmSettings(context: Context) {
         get() = prefs.getString(KEY_GEMINI, null)?.takeIf { it.isNotBlank() } ?: BuildConfig.DEFAULT_GEMINI_API_KEY
         set(v) = prefs.edit().putString(KEY_GEMINI, v.trim()).apply()
 
-    /** Groq (lowest TTFT) when a Groq key exists, otherwise Gemini 3.5 Flash-Lite. */
+    /**
+     * The primary rung: Groq Qwen3.8-27B unless the user picked another model. A stored id that
+     * is no longer offered (e.g. the retired Llama models) falls back to the default.
+     */
     var model: LlmModel
-        get() = LlmModels.byId(prefs.getString(KEY_MODEL, null))
-            ?: if (groqKey.isNotBlank()) LlmModels.GROQ_LLAMA_70B else LlmModels.GEMINI_FLASH_LITE
+        get() = LlmModels.byId(prefs.getString(KEY_MODEL, null)) ?: LlmModels.DEFAULT
         set(v) = prefs.edit().putString(KEY_MODEL, v.id).apply()
 
     /** Optional model-id override (same provider), e.g. when a provider retires a model. */
@@ -32,12 +34,20 @@ class LlmSettings(context: Context) {
         get() = prefs.getString(KEY_MODEL_OVERRIDE, "") ?: ""
         set(v) = prefs.edit().putString(KEY_MODEL_OVERRIDE, v.trim()).apply()
 
-    /** The model actually requested: [model] with [modelIdOverride] applied. */
+    /** The primary actually requested: [model] with [modelIdOverride] applied. */
     fun effectiveModel(): LlmModel {
         val m = model
         val o = modelIdOverride
-        return if (o.isBlank() || o == m.id) m else m.copy(id = o, label = "${m.provider.label} $o", fallbackId = m.id)
+        return if (o.isBlank() || o == m.id) m else m.copy(id = o, label = "${m.provider.label} $o", note = "id override")
     }
+
+    /**
+     * The failover cascade for one turn: the primary, then [LlmModels.CASCADE] (which still
+     * contains the un-overridden model). Rungs whose provider has no key are dropped.
+     */
+    fun cascade(): List<LlmTarget> = LlmModels.cascadeFrom(effectiveModel())
+        .filter { hasKey(it.provider) }
+        .map { LlmTarget(it, keyFor(it.provider)) }
 
     var languageMode: LanguageMode
         get() = runCatching { LanguageMode.valueOf(prefs.getString(KEY_LANG, "AUTO")!!) }.getOrDefault(LanguageMode.AUTO)

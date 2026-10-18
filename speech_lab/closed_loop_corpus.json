@@ -1,5 +1,5 @@
 {
-  "description": "VaaniEdge closed-loop corpus: the 4 official IISc evaluation prompts plus representative assistant responses in English and Hinglish. Consumed by app/src/test/.../ClosedLoopFixtureTest.kt (exact Kotlin codec + G2P) and speech_lab/verify_closed_loop.py (VITS -> Whisper round trip).",
+  "description": "VaaniEdge closed-loop corpus: the 4 official IISc evaluation prompts plus representative assistant responses in English and Hinglish, and a held-out set (kind 'heldout', written before the Session-3 STT post-corrector was evaluated on any of it) used only to measure generalisation. Consumed by app/src/test/.../ClosedLoopFixtureTest.kt (exact Kotlin codec + G2P) and speech_lab/verify_closed_loop.py (VITS -> Whisper round trip).",
   "utterances": [
     {"id": "P1", "kind": "prompt", "lang": "en", "text": "What is the weather forecast for Bangalore tomorrow?"},
     {"id": "P2", "kind": "prompt", "lang": "en", "text": "Can you set a reminder for my meeting at 5 PM?"},
@@ -13,6 +13,15 @@
     {"id": "R3-en", "kind": "response", "lang": "en", "text": "Your alarm is set for 7 AM tomorrow morning."},
     {"id": "R3-hi", "kind": "response", "lang": "hi", "text": "Aapka alarm kal subah 7 baje ke liye set ho gaya hai."},
     {"id": "R4-en", "kind": "response", "lang": "en", "text": "Today you have three meetings, and your next one is the lab review at 4:30 PM."},
-    {"id": "R4-hi", "kind": "response", "lang": "hi", "text": "Aaj aapki teen meetings hain, aur aapki next meeting 4:30 PM par lab review hai."}
+    {"id": "R4-hi", "kind": "response", "lang": "hi", "text": "Aaj aapki teen meetings hain, aur aapki next meeting 4:30 PM par lab review hai."},
+
+    {"id": "H1-hi", "kind": "heldout", "lang": "hi", "text": "Kal shaam 6 baje meeting ka reminder laga do."},
+    {"id": "H2-hi", "kind": "heldout", "lang": "hi", "text": "Parson subah 8 baje ka alarm set kar do."},
+    {"id": "H3-hi", "kind": "heldout", "lang": "hi", "text": "Kya kal Bangalore mein baarish hogi?"},
+    {"id": "H4-hi", "kind": "heldout", "lang": "hi", "text": "Meri agli meeting kitne baje hai?"},
+    {"id": "H5-hi", "kind": "heldout", "lang": "hi", "text": "Aaj shaam ka mausam kaisa rahega?"},
+    {"id": "H6-en", "kind": "heldout", "lang": "en", "text": "Wake me up at 6:30 AM tomorrow."},
+    {"id": "H7-en", "kind": "heldout", "lang": "en", "text": "What time is my next meeting today?"},
+    {"id": "H8-en", "kind": "heldout", "lang": "en", "text": "Remind me to call the lab at 3 PM."}
   ]
 }
