@@ -1,0 +1,43 @@
+VaaniEdge — On-Device Speech AI
+IISc Computational Intelligence Lab
+
+================================================================================
+ORIGINAL WORK (© VaaniEdge / IISc CI Lab)
+================================================================================
+All engine, DSP, and codec code under the Kotlin package `in.iisc.vaani.*` and
+the native library `app/src/main/cpp/vaani_dsp_neon.cpp`, plus the host-side
+pipeline in `speech_lab/`, is original first-principles work:
+
+  * libvaani_dsp_neon.so   — custom C++17 ARM64 NEON DSP (pre-emphasis, RMS,
+                             Whisper-exact log-Mel spectrogram, float->PCM16).
+  * in.iisc.vaani.neural.* — ONNX Runtime inference engines (VAD, Whisper STT
+                             with logit-level script masking, VITS TTS) written
+                             directly against the ai.onnxruntime API.
+  * in.iisc.vaani.codec.*  — Hinglish Codec + Indic Grapheme-to-Phoneme engine.
+  * in.iisc.vaani.audio.*  — capture / endpointing / streaming-TTS orchestration.
+
+================================================================================
+THIRD-PARTY COMPONENTS (used as dependencies, with thanks)
+================================================================================
+This project runs inference on third-party models and runtime. They are used
+under their own licences; VaaniEdge claims no ownership of them. Model ONNX
+metadata (`producer_name`, `doc_string`) records the same provenance.
+
+1. ONNX Runtime (Android)        — © Microsoft.            MIT License.
+   Maven: com.microsoft.onnxruntime:onnxruntime-android:1.18.0
+   Provides libonnxruntime.so and the ai.onnxruntime.* API.
+
+2. OpenAI Whisper (tiny, multilingual) — © OpenAI.         MIT License.
+   STT acoustic model. ONNX export from the Hugging Face ONNX community;
+   dynamically re-quantized to INT8 and repackaged as vaani_stt_*.int8.onnx.
+
+3. Silero VAD                    — © Silero Team.          MIT License.
+   Voice-activity model, repackaged as vaani_vad.onnx.
+
+4. Piper / VITS (hi_IN voice)    — © rhasspy / Piper.      See upstream model card.
+   Neural TTS voice (rhasspy/piper-voices). Re-quantized to INT8 and repackaged
+   as vaani_tts_vits.int8.onnx; its config as vaani_tts_config.json.
+
+The Whisper Slaney Mel-filterbank matrix in vaani_mel_filters.bin is computed
+from first principles (see speech_lab/prepare_models.py) and matches the
+librosa/Whisper filterbank definition.

@@ -1,0 +1,344 @@
+{
+  "target_device": "OnePlus 11R 5G (CPH2487) — Snapdragon 8+ Gen 1, arm64-v8a",
+  "rtf_disclaimer": "projected_from_param_counts_only; validate on-device in a later session",
+  "models": {
+    "vaani_stt_encoder.int8.onnx": {
+      "file": "vaani_stt_encoder.int8.onnx",
+      "size_mb": 10.125,
+      "param_count": 8208442,
+      "theoretical_fp32_mb": 32.834,
+      "int8_size_reduction_pct": 69.16,
+      "inputs": [
+        {
+          "name": "input_features",
+          "shape": [
+            "batch_size",
+            "feature_size",
+            "encoder_sequence_length"
+          ],
+          "type": "tensor(float)"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "last_hidden_state",
+          "shape": [
+            "batch_size",
+            1500,
+            384
+          ],
+          "type": "tensor(float)"
+        }
+      ],
+      "projected_gflops_per_inference": 24.63,
+      "projected_rtf_sd8plus_gen1": 0.09
+    },
+    "vaani_stt_decoder.int8.onnx": {
+      "file": "vaani_stt_decoder.int8.onnx",
+      "size_mb": 30.461,
+      "param_count": 29552338,
+      "theoretical_fp32_mb": 118.209,
+      "int8_size_reduction_pct": 74.23,
+      "inputs": [
+        {
+          "name": "input_ids",
+          "shape": [
+            "batch_size",
+            "decoder_sequence_length"
+          ],
+          "type": "tensor(int64)"
+        },
+        {
+          "name": "encoder_hidden_states",
+          "shape": [
+            "batch_size",
+            "encoder_sequence_length / 2",
+            384
+          ],
+          "type": "tensor(float)"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "logits",
+          "shape": [
+            "batch_size",
+            "decoder_sequence_length",
+            51865
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.0.decoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.0.decoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.0.encoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.0.encoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.1.decoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.1.decoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.1.encoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.1.encoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.2.decoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.2.decoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.2.encoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.2.encoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.3.decoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.3.decoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "past_decoder_sequence_length + 1",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.3.encoder.key",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "present.3.encoder.value",
+          "shape": [
+            "batch_size",
+            6,
+            "encoder_sequence_length_out",
+            64
+          ],
+          "type": "tensor(float)"
+        }
+      ],
+      "projected_gflops_per_inference": 1.89,
+      "projected_rtf_sd8plus_gen1": 0.007
+    },
+    "vaani_vad.onnx": {
+      "file": "vaani_vad.onnx",
+      "size_mb": 2.243,
+      "param_count": 1,
+      "theoretical_fp32_mb": null,
+      "int8_size_reduction_pct": null,
+      "inputs": [
+        {
+          "name": "input",
+          "shape": [
+            "dyn",
+            "dyn"
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "state",
+          "shape": [
+            2,
+            "dyn",
+            128
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "sr",
+          "shape": [],
+          "type": "tensor(int64)"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "shape": [
+            "unk__54",
+            1
+          ],
+          "type": "tensor(float)"
+        },
+        {
+          "name": "stateN",
+          "shape": [
+            "unk__55",
+            "unk__56",
+            "unk__57"
+          ],
+          "type": "tensor(float)"
+        }
+      ],
+      "projected_gflops_per_inference": 0.0,
+      "projected_rtf_sd8plus_gen1": 0.0
+    },
+    "vaani_tts_vits.int8.onnx": {
+      "file": "vaani_tts_vits.int8.onnx",
+      "size_mb": 18.344,
+      "param_count": 15651192,
+      "theoretical_fp32_mb": 62.605,
+      "int8_size_reduction_pct": 70.7,
+      "inputs": [
+        {
+          "name": "input",
+          "shape": [
+            "batch_size",
+            "phonemes"
+          ],
+          "type": "tensor(int64)"
+        },
+        {
+          "name": "input_lengths",
+          "shape": [
+            "batch_size"
+          ],
+          "type": "tensor(int64)"
+        },
+        {
+          "name": "scales",
+          "shape": [
+            3
+          ],
+          "type": "tensor(float)"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "shape": [
+            "batch_size",
+            "time",
+            "Unsqueezeoutput_dim_2",
+            "Unsqueezeoutput_dim_3"
+          ],
+          "type": "tensor(float)"
+        }
+      ],
+      "projected_gflops_per_inference": 5.01,
+      "projected_rtf_sd8plus_gen1": 0.061,
+      "measured_fp32_mb": 62.95,
+      "measured_reduction_pct": 70.86
+    },
+    "_assets": {
+      "vaani_mel_filters.bin": 0.0643,
+      "vaani_vocab.json": 0.6662,
+      "vaani_tts_config.json": 0.005
+    }
+  },
+  "totals": {
+    "model_size_mb": 61.17,
+    "assets_dir_mb": 61.91
+  }
+}

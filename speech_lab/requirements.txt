@@ -1,0 +1,7 @@
+# VaaniEdge speech_lab pipeline (host-side model preparation & benchmarking).
+# Python 3.10+; install into an isolated venv.
+onnx>=1.16
+onnxruntime>=1.18
+huggingface_hub>=0.23
+numpy>=1.26
+scipy>=1.11

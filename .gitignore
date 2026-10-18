@@ -1,0 +1,48 @@
+# ---------------------------------------------------------------------------
+# VaaniEdge — IISc Computational Intelligence Lab
+# Git ignore rules. Source, CMake, and on-device ONNX model assets ARE tracked;
+# machine-specific, generated, and temporary artifacts are not.
+# ---------------------------------------------------------------------------
+
+# Android Gradle build outputs
+.gradle/
+build/
+*/build/
+app/build/
+captures/
+.cxx/
+app/.cxx/
+
+# Machine-specific SDK pointer (regenerated per host)
+local.properties
+
+# Packaged binaries (rebuilt from source; never committed)
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Host temp / external work directories (models & venv live outside the repo)
+/tmp/
+
+# Keystores / secrets
+*.jks
+*.keystore
+
+# IDE / OS noise
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+local.gradle
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+speech_lab/__pycache__/
+
+# Keep the Gradle wrapper jar tracked (do NOT ignore gradle/wrapper/*.jar)
+!gradle/wrapper/gradle-wrapper.jar
+
+# NOTE: app/src/main/assets/models/*.onnx and *.bin ARE intentionally tracked.
