@@ -2,14 +2,16 @@ package `in`.iisc.vaani.neural
 
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
+import ai.onnxruntime.OrtException
 import ai.onnxruntime.OrtSession
+import android.util.Log
 import `in`.iisc.vaani.codec.IndicPhonemizer
 import java.nio.FloatBuffer
 import java.nio.LongBuffer
 import kotlin.math.abs
 
-/** One synthesised clause plus how long the network took. */
-data class TtsAudio(val samples: FloatArray, val sampleRate: Int, val synthMs: Long) {
+/** One synthesised clause plus how long the network took; [failedSentences] were skipped. */
+data class TtsAudio(val samples: FloatArray, val sampleRate: Int, val synthMs: Long, val failedSentences: Int = 0) {
     val durationSec: Double get() = samples.size.toDouble() / sampleRate
     val rtf: Double get() = if (durationSec > 0) synthMs / 1000.0 / durationSec else 0.0
 }
@@ -27,23 +29,36 @@ data class TtsAudio(val samples: FloatArray, val sampleRate: Int, val synthMs: L
  * peak-normalised so every clause plays at the same loudness.
  *
  * The voice ships fp16-stored / fp32-computed: ORT constant-folds the weight Casts at
- * session creation. (The Session-1 INT8 build used ConvInteger, which ORT Android 1.18
- * cannot load and which ran 3.2x slower on CPU — see speech_lab/evaluation_metrics.json.)
+ * session creation, and no node computes in fp16.
+ *
+ * On the OnePlus 11R, ORT intermittently aborted the stochastic duration predictor with
+ * `ScatterND ... Invalid indice found, indice = 4656722024375255042` (also `Expand`,
+ * `GatherElements`). That "index" is 0x40A00002_40A00002, i.e. two float32 5.000001: the
+ * spline's tail bound plus its search epsilon. Stale float memory was read as int64 indices,
+ * a buffer-reuse fault rather than a numeric overflow. Hence: no memory-pattern buffer
+ * reuse for this session, every run serialised on [sessionLock], empty sentences never
+ * reach ORT, and a failed sentence is retried once with deterministic durations
+ * ([FALLBACK_SCALES]) before it is skipped and logged.
  */
 class VaaniTtsEngine(
     modelPath: String,
     private val config: VaaniTtsConfig,
     threads: Int = 4,
-    private val scales: FloatArray = floatArrayOf(0.667f, 1.0f, 0.8f),
+    private val scales: FloatArray = DEFAULT_SCALES,
     private val sentenceSilenceSec: Float = 0.15f,
 ) : AutoCloseable {
 
     private val env: OrtEnvironment = OrtEnvironment.getEnvironment()
-    private val session: OrtSession = env.createSession(modelPath, VaaniSttEngine.sessionOptions(threads))
+    private val session: OrtSession = env.createSession(modelPath, sessionOptions(threads))
+    private val sessionLock = Any()
 
     private val inputName: String
     private val lengthsName: String
     private val scalesName: String?
+
+    /** Piper's structural ids (BOS ^, PAD _, EOS $, word gap): a sentence of only these is empty. */
+    private val structuralIds: Set<Int> =
+        listOf("^", "_", "$", " ").mapNotNull { config.phonemeIdMap[it]?.firstOrNull() }.toSet()
 
     val sampleRate: Int get() = config.sampleRate
 
@@ -54,14 +69,22 @@ class VaaniTtsEngine(
         scalesName = inNames.firstOrNull { it.contains("scale") }
     }
 
-    /** Synthesises acoustic-Devanagari [text] (phonemised internally), sentence by sentence. */
-    fun synthesize(text: String): TtsAudio {
+    /**
+     * Synthesises acoustic-Devanagari [text] (phonemised internally), sentence by sentence.
+     * Thread-safe: concurrent callers (loopback, the clause queue, warm-up) are serialised.
+     */
+    fun synthesize(text: String): TtsAudio = synchronized(sessionLock) { synthesizeLocked(text) }
+
+    private fun synthesizeLocked(text: String): TtsAudio {
         val t0 = System.nanoTime()
+        if (text.isBlank()) return TtsAudio(FloatArray(0), sampleRate, 0)
         val sentences = IndicPhonemizer.textToSentenceIds(text, config.phonemeIdMap)
+            .filter { ids -> ids.any { it !in structuralIds } }
         if (sentences.isEmpty()) return TtsAudio(FloatArray(0), sampleRate, 0)
+        var failed = 0
+        val pieces = sentences.mapNotNull { ids -> runWithRetry(ids).also { if (it == null) failed++ } }
         val gap = (sentenceSilenceSec * sampleRate).toInt()
-        val pieces = sentences.map { synthesizeIds(it) }
-        val total = pieces.sumOf { it.size } + gap * (pieces.size - 1)
+        val total = pieces.sumOf { it.size } + gap * (pieces.size - 1).coerceAtLeast(0)
         val out = FloatArray(total)
         var off = 0
         for ((i, p) in pieces.withIndex()) {
@@ -69,13 +92,24 @@ class VaaniTtsEngine(
             if (i < pieces.size - 1) off += gap
         }
         normalisePeak(out)
-        return TtsAudio(out, sampleRate, (System.nanoTime() - t0) / 1_000_000)
+        return TtsAudio(out, sampleRate, (System.nanoTime() - t0) / 1_000_000, failed)
     }
 
-    /** Runs VITS on one Piper id sequence and returns the raw waveform. */
-    @Synchronized
-    fun synthesizeIds(ids: IntArray): FloatArray {
-        if (ids.isEmpty()) return FloatArray(0)
+    /** One sentence; on an ORT failure retries once with deterministic durations, else null. */
+    private fun runWithRetry(ids: IntArray): FloatArray? = try {
+        run(ids, scales)
+    } catch (e: OrtException) {
+        Log.w(TAG, "VITS failed (${e.message?.take(160)}); retrying with deterministic durations")
+        try {
+            run(ids, FALLBACK_SCALES)
+        } catch (e2: OrtException) {
+            Log.e(TAG, "VITS retry failed; sentence of ${ids.size} ids skipped", e2)
+            null
+        }
+    }
+
+    /** Runs VITS on one Piper id sequence and returns the raw waveform (caller holds [sessionLock]). */
+    private fun run(ids: IntArray, scales: FloatArray): FloatArray {
         val toClose = ArrayList<AutoCloseable>()
         try {
             val input = OnnxTensor.createTensor(
@@ -109,6 +143,20 @@ class VaaniTtsEngine(
     }
 
     override fun close() {
-        runCatching { session.close() }
+        synchronized(sessionLock) { runCatching { session.close() } }
+    }
+
+    companion object {
+        private const val TAG = "VaaniTts"
+
+        /** [noise_scale, length_scale, noise_w]: low duration noise keeps the predictor stable. */
+        val DEFAULT_SCALES = floatArrayOf(0.667f, 1.0f, 0.2f)
+
+        /** Retry settings: deterministic durations, calmer pitch/energy noise. */
+        val FALLBACK_SCALES = floatArrayOf(0.5f, 1.0f, 0.0f)
+
+        /** The STT options minus ORT's memory-pattern buffer reuse (see the class comment). */
+        fun sessionOptions(threads: Int): OrtSession.SessionOptions =
+            VaaniSttEngine.sessionOptions(threads).apply { setMemoryPatternOptimization(false) }
     }
 }

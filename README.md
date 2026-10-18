@@ -12,8 +12,8 @@ turn. Every engine, DSP routine, codec and UI component under `in.iisc.vaani.*` 
 models, runtime and fonts are attributed dependencies (see [`NOTICE`](NOTICE)).
 
 > `./gradlew testDebugUnitTest assembleDebug assembleRelease`
-> → **BUILD SUCCESSFUL, 85 unit tests green**, a debug APK and an R8-minified, signed release
-> APK. Every shipped graph loads and runs under onnxruntime **1.18.0** (the APK's runtime) on the
+> → **BUILD SUCCESSFUL, 90 unit tests green**, a debug APK and a signed release APK. Every
+> shipped graph loads and runs under onnxruntime **1.18.0** (the APK's runtime) on the
 > host. Speech quality and latency below are **measured on the build host**; the phone's own
 > numbers appear in the in-app HUD and in logcat (`VaaniTelemetry`).
 
@@ -175,8 +175,26 @@ Whisper always encodes a 30 s window.
 4. **STT post-corrector** (above). Most of the remaining Hinglish error is Whisper-tiny
    **translating** or hallucinating (e.g. `Today's schedule is our next meeting.`), which no
    lexicon can repair; the corrector deliberately leaves English alone.
-5. **Release build**: R8 minify + resource shrinking, JNI / ONNX Runtime keep rules, local signing
-   key; debug and release install side by side.
+5. **Release build**: signed with a local key; debug and release install side by side. R8 is off
+   because the minified build closed at launch on the phone (`app/proguard-rules.pro` is kept for a
+   later attempt).
+6. **On-device fixes** (OnePlus 11R testing):
+   - **TTS crash** (`ScatterND … invalid indice = 4656722024375255042`, `Expand_4969`,
+     `GatherElements_4204`). The cause is onnxruntime **1.18**'s memory-pattern planner reusing stale
+     buffers once VITS input lengths vary. The "index" is two float32 5.000001, the spline's tail
+     bound, read as int64. It reproduces on the host in 29 of 100 varying-length runs and in 0 of 100
+     with the pattern disabled, which is what the app's TTS session now does; ORT 1.31 is unaffected.
+     `check_ort_compat.py --stress` guards it. Runs are also serialised, empty sentences skipped, and
+     a failed sentence is retried once with deterministic durations, then logged and skipped, never
+     shown in the feed. The default duration noise is now 0.2 (it was 0.8 when the tables above were
+     measured).
+   - **"eight"** was spelled like "at" (एट), so 28.3 was heard as "20.3" in 0 of 8 samples. With एईट
+     it is heard correctly in 10 of 12.
+   - **AM/PM**: a spaced `P. M.` no longer splits into two spoken sentences.
+   - **Whisper non-speech output** (`1,2,3,4,5,5,5,5`, `Arrrrr`) is rejected. In a Speak-chip turn
+     the chip's prompt is sent instead, labelled in the feed and excluded from WER. Impossible clock
+     times next to a time word (`6:77 baje`) become the spoken hour.
+   - The top-bar title stays on one line.
 
 **Iteration 2**
 1. **Runtime blocker fixed** — the Iteration-1 INT8 encoder/VITS used `ConvInteger` with int8 weights,

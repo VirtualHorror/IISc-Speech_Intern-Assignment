@@ -35,8 +35,8 @@ android {
         applicationId = "in.iisc.vaani"
         minSdk = 28
         targetSdk = 34
-        versionCode = 3
-        versionName = "3.0.0-session3"
+        versionCode = 4
+        versionName = "3.1.0"
         manifestPlaceholders["appLabel"] = "VaaniEdge"
 
         buildConfigField("String", "DEFAULT_GROQ_API_KEY", secret("GROQ_API_KEY"))
@@ -91,10 +91,11 @@ android {
             manifestPlaceholders["appLabel"] = "VaaniEdge (debug)"
         }
         release {
-            // R8: shrink + optimise Kotlin/Compose bytecode; JNI and ONNX Runtime are kept by
-            // proguard-rules.pro. Models stay uncompressed assets (noCompress below).
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // No R8: the minified build closed at launch on the OnePlus 11R while the debug build
+            // ran, so release ships unminified (non-debuggable, release-signed). proguard-rules.pro
+            // is kept for a future R8 attempt. Models stay uncompressed assets (noCompress below).
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

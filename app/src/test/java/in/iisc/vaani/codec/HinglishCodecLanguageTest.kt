@@ -32,7 +32,7 @@ class HinglishCodecLanguageTest {
     @Test fun englishNumbersTimesAndTemperatures() {
         assertEquals("फ़ोर थर्टी पी एम", tts("4:30 PM", "en"))
         assertEquals("सेवन ए एम", tts("7:00 AM", "en"))
-        assertEquals("ट्वेंटी एट डिग्रीज़ सेल्सियस", tts("28°C", "en"))
+        assertEquals("ट्वेंटी एईट डिग्रीज़ सेल्सियस", tts("28°C", "en"))
         assertEquals("एटी फ़ोर परसेंट", tts("84%", "en"))
     }
 
@@ -102,5 +102,20 @@ class HinglishCodecLanguageTest {
             val cov = IndicPhonemizer.coverage(dev, cfg.phonemeIdMap)
             assertEquals("dropped ${cov.missing} for $dev", 0, cov.dropped)
         }
+    }
+
+    @Test fun eightNoLongerSoundsLikeAt() {
+        // एट was shared by "eight" and "at": "28.3" was heard as "twenty at point three".
+        assertEquals("ट्वेंटी एईट पॉइंट थ्री डिग्रीज़ सेल्सियस", tts("28.3°C", "en"))
+        assertEquals("एटी फ़ोर परसेंट", tts("84%", "en"))
+        assertEquals("एटीन", tts("18", "en"))
+        assertEquals("मीटिंग एट फ़ाइव पी एम", tts("meeting at 5 PM", "en"))
+    }
+
+    @Test fun amPmIsNeverSplitIntoTwoSentences() {
+        for (s in listOf("5 PM", "5 P.M.", "5 P. M.", "5 p.m.", "5 pm")) assertEquals(s, "फ़ाइव पी एम", tts(s, "en").trimEnd('.'))
+        assertEquals("पाँच पी एम", tts("5:00 P. M.", "hi").trimEnd('.'))
+        assertEquals("सात ए एम", tts("7 a. m.", "hi").trimEnd('.'))
+        assertTrue(!tts("Your meeting is at 5 P. M. today.", "en").contains("पी. एम"))
     }
 }

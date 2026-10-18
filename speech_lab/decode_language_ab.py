@@ -39,7 +39,7 @@ def main():
     stt = v.WhisperOnnx(os.path.join(v.ASSETS, "vaani_stt_encoder.int8.onnx"),
                         os.path.join(v.ASSETS, "vaani_stt_decoder.int8.onnx"),
                         os.path.join(v.ASSETS, "vaani_stt_decoder_with_past.int8.onnx"), vocab, 4)
-    tts = v.make_session(os.path.join(v.ASSETS, "vaani_tts_vits.fp16.onnx"), 4)
+    tts = v.make_session(os.path.join(v.ASSETS, "vaani_tts_vits.fp16.onnx"), 4, mem_pattern=False)
     cer = {"hi": [], "en": []}
     for utt in fx["utterances"]:
         if utt["lang"] != "hi" or utt.get("kind") == "heldout":

@@ -118,15 +118,20 @@ private fun TopBar(state: AgentUiState, onLanguage: () -> Unit, onModel: () -> U
     Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("VaaniEdge", style = MaterialTheme.typography.headlineSmall, color = Vaani.Paper)
-                Text("IISc Speech Lab voice agent", style = MaterialTheme.typography.bodySmall, color = Vaani.Fog)
+                // One line on a 1080 px (~384 dp) phone: never wraps to "VaaniEd" / "ge".
+                Text("VaaniEdge", style = MaterialTheme.typography.headlineSmall, color = Vaani.Paper,
+                    maxLines = 1, softWrap = false)
+                Text("IISc Speech Lab voice agent", style = MaterialTheme.typography.bodySmall, color = Vaani.Fog,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+            Spacer(Modifier.width(4.dp))
             Pill(state.languageMode.label, Vaani.Saffron, onClick = onLanguage, description = "Language mode, tap to change")
-            Spacer(Modifier.width(6.dp))
+            Spacer(Modifier.width(4.dp))
             Pill(
                 if (state.cloudEnabled && state.cloudReady) state.model.label else "On-device replies",
                 Vaani.Cloud, onClick = onModel, description = "LLM and API keys",
                 trailing = { GlyphIcon(Glyph.SETTINGS, Vaani.Fog, 14.dp) },
+                modifier = Modifier.widthIn(max = 132.dp),
             )
         }
         Spacer(Modifier.height(8.dp))
@@ -161,17 +166,19 @@ private fun TopBar(state: AgentUiState, onLanguage: () -> Unit, onModel: () -> U
 private fun Pill(
     text: String, accent: Color, onClick: () -> Unit, description: String,
     trailing: (@Composable () -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        Modifier
+        modifier
             .clip(RoundedCornerShape(50))
             .border(1.dp, accent.copy(alpha = 0.55f), RoundedCornerShape(50))
             .clickable(onClick = onClick)
             .semantics { contentDescription = description }
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text, style = MaterialTheme.typography.labelMedium, color = accent, maxLines = 1)
+        Text(text, style = MaterialTheme.typography.labelMedium, color = accent, maxLines = 1,
+            overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
         if (trailing != null) { Spacer(Modifier.width(4.dp)); trailing() }
     }
 }
@@ -406,6 +413,9 @@ private fun UserBubble(item: FeedItem.User) {
             }
             Spacer(Modifier.height(4.dp))
             Text(item.text, style = MaterialTheme.typography.bodyLarge, color = Vaani.Paper)
+            item.note?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = Vaani.Saffron)
+            }
             item.rawAsr?.let {
                 Text("raw ASR · $it", style = MaterialTheme.typography.bodySmall.copy(fontFamily = PlexDevanagari), color = Vaani.Fog)
             }

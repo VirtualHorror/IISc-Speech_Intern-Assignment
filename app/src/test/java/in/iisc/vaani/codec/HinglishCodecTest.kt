@@ -199,4 +199,28 @@ class HinglishCodecTest {
         val usPerCall = (System.nanoTime() - t0) / 1_000.0 / (n * noisy.size)
         assertTrue("$usPerCall us per transcript", usPerCall < 500.0)
     }
+
+    // ===== on-device findings: impossible clock times, non-speech output ==========
+
+    @Test fun impossibleClockTimesBecomeTheSpokenHour() {
+        assertEquals("Mujhe kal subah 7 baje ka alarm set karna hai", hi("Mujhe kal subah 6:77 baje ka alarm set karna hai"))
+        assertEquals("7 baje ka alarm", hi("7:77 ka alarm"))                  // no "baje": added
+        assertEquals("meeting 6 baje", hi("meeting 6:75 baje"))              // not a repeated digit: hour kept
+        assertEquals("Set an alarm for 7:00 am", en("Set an alarm for 7:77 am"))
+        assertEquals("score 6:77", hi("score 6:77"))                         // no time word nearby: untouched
+        assertEquals("alarm 6:30 baje", hi("alarm 6:30 baje"))               // valid times untouched
+    }
+
+    @Test fun whisperNonSpeechOutputIsRecognised() {
+        assertTrue(HinglishCodec.isLikelyHallucination("1,2,3,4,5,5,5,5"))
+        assertTrue(HinglishCodec.isLikelyHallucination("1, 2, 3, 4, 5."))
+        assertTrue(HinglishCodec.isLikelyHallucination("Arrrrr"))
+        assertTrue(HinglishCodec.isLikelyHallucination("Hmmmm. Ahhhh."))
+        assertTrue(HinglishCodec.isLikelyHallucination("   "))
+        assertTrue(HinglishCodec.isLikelyHallucination("Uh", expectingPrompt = true))
+        assertTrue(!HinglishCodec.isLikelyHallucination("Hi"))               // short is fine in a free turn
+        assertTrue(!HinglishCodec.isLikelyHallucination("7 baje", expectingPrompt = true))
+        assertTrue(!HinglishCodec.isLikelyHallucination("Mujhe kal subah 7 baje ka alarm set karna hai", expectingPrompt = true))
+        assertTrue(!HinglishCodec.isLikelyHallucination("Set alarms for 6, 7, 8 and 9 am"))
+    }
 }

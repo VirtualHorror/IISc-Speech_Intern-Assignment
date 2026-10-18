@@ -71,7 +71,7 @@ TTS_SR, STT_SR = 22050, 16000
 N_FFT, HOP, N_MELS, N_FRAMES = 400, 160, 80, 3000
 N_SAMPLES = HOP * N_FRAMES
 SENTENCE_SILENCE_S = 0.2           # Piper's default inter-sentence silence
-TTS_SCALES = [0.667, 1.0, 0.8]     # vaani_tts_config.json "inference"
+TTS_SCALES = [0.667, 1.0, 0.2]     # VaaniTtsEngine.DEFAULT_SCALES (noise_w 0.8 until Iteration 3's on-device fixes)
 
 
 def log(*a):
@@ -177,11 +177,12 @@ def whisper_log_mel_reference(audio, filters):
 # ---------------------------------------------------------------------------
 #  ONNX Runtime sessions (same options the Kotlin engines set)
 # ---------------------------------------------------------------------------
-def make_session(path, threads):
+def make_session(path, threads, mem_pattern=True):
     so = ort.SessionOptions()
     so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
     so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
     so.intra_op_num_threads = threads
+    so.enable_mem_pattern = mem_pattern          # the app's TTS session runs without it (ORT 1.18 bug)
     so.add_session_config_entry("session.intra_op.allow_spinning", "1")
     return ort.InferenceSession(path, so, providers=["CPUExecutionProvider"])
 
@@ -563,7 +564,7 @@ def main():
     past_path = next((p for p in WITH_PAST_CANDIDATES if os.path.exists(p)), None)
     stt = WhisperOnnx(args.encoder, os.path.join(ASSETS, "vaani_stt_decoder.int8.onnx"), past_path,
                       vocab, args.threads)
-    tts = make_session(args.tts, args.threads)
+    tts = make_session(args.tts, args.threads, mem_pattern=False)
 
     # Warm-up (first-run allocation / kernel selection excluded from timings).
     warm = np.zeros(STT_SR, dtype=np.float32)

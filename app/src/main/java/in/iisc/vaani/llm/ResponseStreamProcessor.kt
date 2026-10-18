@@ -33,6 +33,12 @@ class ClauseSegmenter(private val minCommaWords: Int = 5, private val maxChars: 
                 '.' -> when {
                     next == null -> final
                     !next.isWhitespace() -> false
+                    // "5 P. M.": never cut between the P and the M (that pause sounded like two sentences)
+                    isMeridiemLetter(start, i) -> {
+                        var k = i + 1
+                        while (k < buf.length && buf[k].isWhitespace()) k++
+                        if (k >= buf.length) final else buf[k] != 'M' && buf[k] != 'm'
+                    }
                     // "p.m. tonight" continues, "p.m. Your..." ends: decide on the next word
                     isAbbreviation(start, i) -> {
                         var k = i + 1
@@ -65,12 +71,26 @@ class ClauseSegmenter(private val minCommaWords: Int = 5, private val maxChars: 
         if (clause.any { it.isLetterOrDigit() }) out.add(clause)
     }
 
-    /** The word ending just before the '.' at [dot] is `p.m` / `e.g` / a title like `Dr`. */
+    /** The word ending just before the '.' at [dot] is `p.m` / `e.g` / a title like `Dr` / the `M` of `P. M`. */
     private fun isAbbreviation(from: Int, dot: Int): Boolean {
         var s = dot
         while (s > from && !buf[s - 1].isWhitespace()) s--
         val word = buf.substring(s, dot)
-        return DOTTED.matches(word) || word.lowercase() in TITLES
+        if (DOTTED.matches(word) || word.lowercase() in TITLES) return true
+        if (!word.equals("m", ignoreCase = true)) return false
+        var k = s - 1
+        while (k >= from && buf[k].isWhitespace()) k--
+        return k - 1 >= from && buf[k] == '.' && buf[k - 1] in "AaPp"
+    }
+
+    /** The '.' at [dot] follows a lone A/P that follows a number: "5 P." / "5:00 a." (of AM/PM). */
+    private fun isMeridiemLetter(from: Int, dot: Int): Boolean {
+        val letter = dot - 1
+        if (letter < from || buf[letter] !in "AaPp") return false
+        if (letter - 1 >= from && !buf[letter - 1].isWhitespace() && !buf[letter - 1].isDigit()) return false
+        var k = letter - 1
+        while (k >= from && buf[k].isWhitespace()) k--
+        return k >= from && buf[k].isDigit()
     }
 
     private companion object {

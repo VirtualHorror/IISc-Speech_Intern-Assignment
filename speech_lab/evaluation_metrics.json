@@ -3009,77 +3009,78 @@
       "models": {
         "vaani_stt_decoder.int8.onnx": {
           "ok": true,
-          "load_ms": 390,
-          "run_ms": 80.2,
+          "load_ms": 299,
+          "run_ms": 57.5,
           "output0_shape": [
             1,
             1,
             51865
           ],
-          "size_mb": 30.46,
-          "runs": 10,
-          "threads": 4,
-          "run_ms_min": 49.8
+          "size_mb": 30.46
         },
         "vaani_stt_decoder_with_past.int8.onnx": {
           "ok": true,
-          "load_ms": 235,
-          "run_ms": 5.4,
+          "load_ms": 190,
+          "run_ms": 7.2,
           "output0_shape": [
             1,
             1,
             51865
           ],
-          "size_mb": 29.22,
-          "runs": 10,
-          "threads": 4,
-          "run_ms_min": 3.7
+          "size_mb": 29.22
         },
         "vaani_stt_encoder.int8.onnx": {
           "ok": true,
-          "load_ms": 95,
-          "run_ms": 557.6,
+          "load_ms": 79,
+          "run_ms": 345.1,
           "output0_shape": [
             1,
             1500,
             384
           ],
-          "size_mb": 11.7,
-          "runs": 10,
-          "threads": 4,
-          "run_ms_min": 467.1
+          "size_mb": 11.7
         },
         "vaani_tts_vits.fp16.onnx": {
           "ok": true,
-          "load_ms": 1553,
-          "run_ms": 149.3,
+          "load_ms": 1352,
+          "run_ms": 72.3,
           "output0_shape": [
             1,
             1,
             1,
-            13568
+            12288
           ],
-          "size_mb": 31.7,
-          "runs": 10,
-          "threads": 4,
-          "run_ms_min": 120.7
+          "size_mb": 31.7
         },
         "vaani_vad.onnx": {
           "ok": true,
-          "load_ms": 89,
-          "run_ms": 0.3,
+          "load_ms": 78,
+          "run_ms": 0.8,
           "output0_shape": [
             1,
             1
           ],
-          "size_mb": 2.24,
-          "runs": 10,
-          "threads": 4,
-          "run_ms_min": 0.3
+          "size_mb": 2.24
+        }
+      },
+      "stress": {
+        "vits_mem_pattern_on": {
+          "runs": 100,
+          "failures": 29,
+          "first_error": "/onnxruntime_src/onnxruntime/core/providers/cpu/tensor/gather_elements.cc:154 void onnxrun"
+        },
+        "vits_mem_pattern_off_app": {
+          "runs": 100,
+          "failures": 0,
+          "first_error": null
+        },
+        "decoder_with_past_app": {
+          "runs": 200,
+          "failures": 0
         }
       },
       "all_ok": true,
-      "note": "load/compat gate (all_ok), not a benchmark: re-recorded 18 Oct 2026 22:14 IST while a remote-desktop session used ~1 of the 4 vCPUs (encoder 549 ms with 4 threads vs 432 ms with 3 threads, i.e. spin-wait contention); the same encoder measured 230 ms (10-run median, 4 threads) on the idle host at 18:15 IST - see encoder_precision_ab / session3_findings"
+      "note": "load/compat gate + --stress (varying-shape re-runs with the app's session options); single-run timings are cold and host-load dependent, not benchmarks"
     }
   },
   "session2_findings": {
@@ -4223,7 +4224,7 @@
       "limitation": "most remaining Hinglish error is Whisper-tiny translating or hallucinating (e.g. 'Today's schedule is our next meeting.'), which no lexicon can repair; the corrector deliberately leaves English sentences alone"
     },
     "5_release_build": {
-      "r8": "isMinifyEnabled + isShrinkResources; keeps: in.iisc.vaani.dsp.** (JNI), ai.onnxruntime.**, @Keep, in.iisc.vaani.llm.**, config data classes",
+      "r8": "disabled (isMinifyEnabled/isShrinkResources = false): the R8 build closed at launch on the OnePlus 11R while the debug build ran; no crash log was captured. proguard-rules.pro kept.",
       "signing": "local PKCS12 keystore outside the repo (/tmp/vaani_release.jks), credentials only in git-ignored local.properties; falls back to the debug key when absent",
       "apk_bytes": {
         "debug": 147500099,
@@ -4238,6 +4239,51 @@
       "mitigation": "manual language override (Auto / English / Hinglish chip); the post-corrector leaves English text unchanged even under a hi label"
     },
     "7_lab_bridge_bug_found_and_fixed": "SttDisplayExportTest initially ran without the CMU lexicon (the app always installs it), so the fuzzy phonetic key rewrote English 'say' -> 'se'; fixed by installing the lexicon in the bridge and by making the codec skip all fuzzy matching when no English lexicon is present (unit test added); display CER re-scored with verify_closed_loop.py --rescore-display",
-    "host_note": "latency figures from the Session-3 closed-loop run were taken while a remote-desktop session shared the 4 vCPUs; models/runtime/session options are unchanged since Session 2, so compare latency across sessions with care (the encoder A/B ran back-to-back under equal conditions)"
+    "host_note": "latency figures from the Session-3 closed-loop run were taken while a remote-desktop session shared the 4 vCPUs; models/runtime/session options are unchanged since Session 2, so compare latency across sessions with care (the encoder A/B ran back-to-back under equal conditions)",
+    "8_on_device_fixes": {
+      "generated_at": "2026-10-18T20:23:59+00:00",
+      "tts_crash": {
+        "symptom": "ScatterND_3271 'invalid indice found, indice = 4656722024375255042' (also Expand_4969, GatherElements_4204) on the phone",
+        "evidence": "4656722024375255042 = 0x40A0000240A00002 = two float32 5.000001 (the RQ-spline tail bound 5 + 1e-6 search eps) read as int64; the graph has no fp16 compute (348 fp16 initializers, all Cast to FLOAT)",
+        "root_cause": "onnxruntime 1.18 memory-pattern planner reuses stale buffers once VITS input lengths vary (ORT 1.31 unaffected)",
+        "host_reproduction_ort_1_18": {
+          "vits_mem_pattern_on": {
+            "runs": 100,
+            "failures": 29,
+            "first_error": "/onnxruntime_src/onnxruntime/core/providers/cpu/tensor/gather_elements.cc:154 void onnxrun"
+          },
+          "vits_mem_pattern_off_app": {
+            "runs": 100,
+            "failures": 0,
+            "first_error": null
+          },
+          "decoder_with_past_app": {
+            "runs": 200,
+            "failures": 0
+          }
+        },
+        "corpus_sentences_3x_ort_1_18": {
+          "mem_pattern_on_noise_w_0.2": "18/60 failed",
+          "mem_pattern_on_noise_w_0": "27/60 failed",
+          "mem_pattern_off": "0/120 failed, RTF 0.112 vs 0.121"
+        },
+        "fix": "TTS session with setMemoryPatternOptimization(false); runs serialised on one lock; empty sentences skipped; one retry with scales [0.5, 1.0, 0.0]; failures logged (VaaniTts/VaaniAudio), never shown in the feed",
+        "noise_w": "default 0.2 (was 0.8 in the recorded closed-loop runs); not the cause (deterministic durations failed more often with the memory pattern on)"
+      },
+      "eight_pronunciation": {
+        "method": "shipped VITS -> Whisper EN, seeded samples, espeak-ng IPA as G2P proxy",
+        "twenty_eight_point_three_heard_as_28": {
+          "एट (old, same as 'at')": "0/8",
+          "एइट": "4/12",
+          "ऐइट": "2/12",
+          "एईट (shipped)": "10/12"
+        },
+        "eighty_एटी": "84 heard 12/12",
+        "eighteen_एटीन": "18 heard 12/12 (एईटीन only 6/12)"
+      },
+      "am_pm": "a spaced 'P. M.' was cut by the clause splitter into 'five P' + pause + 'M'; now never split; 'P. M.'/'p.m.' -> 'PM' before TTS",
+      "stt": "Whisper non-speech output rejected (counting runs, stretched sounds, <4 letters in a chip turn); chip turns continue with the labelled prompt text, excluded from WER; invalid clock minutes near a time word -> spoken hour (repeated-digit minutes read as the stuttered number)",
+      "ui": "top-bar title single line (maxLines 1, softWrap false), compact chips, model chip capped at 132 dp"
+    }
   }
 }

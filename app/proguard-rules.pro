@@ -1,4 +1,5 @@
-# VaaniEdge R8 rules (release build: isMinifyEnabled + isShrinkResources).
+# VaaniEdge R8 rules. Not applied at the moment: release ships with isMinifyEnabled = false
+# (the R8 build closed at launch on the OnePlus 11R). Kept for a future R8 attempt.
 # Nothing in the app uses reflection-based serialisation (configs, vocab and SSE chunks are
 # parsed by hand with org.json), so the keeps below are about native code and readable traces.
 

@@ -6,6 +6,7 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
+import android.util.Log
 import `in`.iisc.vaani.dsp.NeonAudioProcessor
 import `in`.iisc.vaani.neural.LanguageMode
 import `in`.iisc.vaani.neural.SttResult
@@ -162,7 +163,8 @@ class AudioPipelineManager(
             val result = stt.transcribe(pcm, languageMode)
             onTranscript(result, endNanos)
         } catch (e: Exception) {
-            onError("STT failed: ${e.message}")
+            Log.e(TAG, "STT failed", e)                    // details stay in logcat, never in the feed
+            onError("Speech recognition failed. Please try again.")
         }
     }
 
@@ -195,9 +197,11 @@ class AudioPipelineManager(
                 when (item) {
                     is ClauseItem.Text -> {
                         if (item.turn != turn.get()) continue
+                        // A failed clause is skipped and logged; the turn keeps playing the rest.
                         val audio = try { tts.synthesize(item.text) } catch (e: Exception) {
-                            onError("TTS failed: ${e.message}"); continue
+                            Log.w(TAG, "TTS clause skipped", e); continue
                         }
+                        if (audio.failedSentences > 0) Log.w(TAG, "TTS: ${audio.failedSentences} sentence(s) skipped after retry")
                         if (item.turn != turn.get() || audio.samples.isEmpty()) continue
                         onClauseSynthesized(item.text, audio)
                         enqueuePcm(item.turn, audio.samples)
@@ -353,6 +357,7 @@ class AudioPipelineManager(
     }
 
     companion object {
+        private const val TAG = "VaaniAudio"
         const val SAMPLE_RATE = 16_000
         private const val PRE_ROLL_CHUNKS = 12          // ~384 ms before VAD onset
         private const val SPEECH_ON = 0.5f

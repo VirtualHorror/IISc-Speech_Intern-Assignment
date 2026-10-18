@@ -84,6 +84,7 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
         @Volatile var firstClauseNanos = 0L
         @Volatile var assistantId = 0L
         @Volatile var lang = "en"
+        @Volatile var sttFallback = false
         var telemetry = Telemetry(source = source)
     }
 
@@ -196,6 +197,7 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
                 prewarm()                                            // = onSpeechStart
                 val acoustic = HinglishCodec.toAcousticDevanagariScript(prompt.text, prompt.lang)
                 val audio = rt.tts.synthesize(acoustic)
+                if (audio.samples.isEmpty()) throw IllegalStateException("no audio for '${prompt.text}'")
                 p.playAndAwait(audio)                                // the phone "speaks" the prompt
                 val pcm16 = NeonAudioProcessor.resample(audio.samples, audio.sampleRate, AudioPipelineManager.SAMPLE_RATE)
                 val end = System.nanoTime()                          // = VAD end-of-speech
@@ -204,9 +206,10 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
                 setState(AgentState.TRANSCRIBING)
                 p.transcribeBuffer(pcm16, end)
             } catch (e: Exception) {
-                notice("Loopback failed: ${e.message}")
+                Log.w(TAG, "loopback failed", e)                     // details stay in logcat
+                notice("Loopback couldn't run this time. Tap Loopback again.")
                 setState(AgentState.IDLE)
-                _ui.update { it.copy(busyPrompt = null) }
+                _ui.update { it.copy(busyPrompt = null, statusDetail = "ARM64 NEON + ONNX INT8 Ready") }
             }
         }
     }
@@ -291,14 +294,27 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
     private fun onTranscript(r: SttResult, endNanos: Long) {
         val t = turn ?: return
         t.endOfSpeechNanos = endNanos
-        val display = HinglishCodec.displayTranscript(r.text, r.language)
-        if (display.isBlank()) {
-            notice("Didn't catch that — please try again.")
-            setState(AgentState.IDLE)
-            _ui.update { it.copy(busyPrompt = null) }
-            return
+        var display = HinglishCodec.displayTranscript(r.text, r.language)
+        var lang = r.language
+        var note: String? = null
+        // A Speak chip told the user what to say: if Whisper returned non-speech garbage
+        // ("1,2,3,4,5,5,5,5", "Arrrrr"), the turn continues with the chip's text, labelled as
+        // such and left out of the WER, so the feed never passes it off as a recognition.
+        val chip = t.benchmark?.takeIf { t.source == "mic" }
+        if (display.isBlank() || HinglishCodec.isLikelyHallucination(display, expectingPrompt = chip != null)) {
+            Log.i(TAG, "rejected STT output: '${r.text}'")
+            if (chip == null) {
+                notice("Didn't catch that — please try again.")
+                setState(AgentState.IDLE)
+                _ui.update { it.copy(busyPrompt = null) }
+                return
+            }
+            display = chip.text
+            lang = chip.lang
+            note = "Speech not recognised; the chip's prompt text was sent instead"
+            t.sttFallback = true
         }
-        t.lang = r.language
+        t.lang = lang
         synchronized(t) {
             t.telemetry = t.telemetry.copy(
                 sttMs = r.sttLatencyMs, sttRtf = r.sttRtf, melMs = r.melMs, encoderMs = r.encoderMs,
@@ -306,11 +322,11 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
                 llmLabel = activeEngineLabel(),
             )
         }
-        val wer = t.benchmark?.let { Metrics.wordErrorRate(it.text, display) }
-        addFeed(FeedItem.User(ids.getAndIncrement(), display, r.language, r.sttLatencyMs,
-            r.text.takeIf { it.trim() != display }, t.source, t.benchmark, wer))
+        val wer = if (note == null) t.benchmark?.let { Metrics.wordErrorRate(it.text, display) } else null
+        addFeed(FeedItem.User(ids.getAndIncrement(), display, lang, r.sttLatencyMs,
+            r.text.takeIf { it.trim() != display }, t.source, t.benchmark, wer, note))
         _ui.update { it.copy(telemetry = t.telemetry) }
-        respond(t, display, r.text)
+        respond(t, display, if (note == null) r.text else display)
     }
 
     /** The rung that will answer first: the primary unless it is cooling down after a failure. */
@@ -477,6 +493,7 @@ class VoiceAgentViewModel(app: Application) : AndroidViewModel(app) {
             .put("conn_reused", tm.connectionReused).put("tts_first_audio_ms", tm.ttsFirstAudioMs)
             .put("e2e_ms", tm.e2eLatencyMs).put("transcript", transcript).put("reply", reply)
             .put("llm_model_id", stats?.modelId).put("failovers", stats?.failovers?.joinToString("; "))
+            .put("stt_fallback", t.sttFallback)
         Log.i("VaaniTelemetry", j.toString())
     }
 

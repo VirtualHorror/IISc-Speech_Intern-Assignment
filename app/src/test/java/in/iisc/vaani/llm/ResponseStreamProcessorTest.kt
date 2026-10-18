@@ -36,6 +36,15 @@ class ResponseStreamProcessorTest {
         assertEquals(listOf("Low of 19.7°C at 4.30 p.m. tonight.", "Done"), clauses)
     }
 
+    @Test fun spacedAmPmIsNeverCutBetweenPAndM() {
+        val (clauses, _, _) = run(listOf("Your meeting is at 5 P", ". M", ". today, ", "see you there. Bye"))
+        assertEquals(listOf("Your meeting is at 5 P. M. today,", "see you there.", "Bye"), clauses)
+        val (c2, _, _) = run(listOf("Reminder set for 5:00 P. M. Your next one is at 6."))
+        assertEquals(listOf("Reminder set for 5:00 P. M.", "Your next one is at 6."), c2)
+        val (c3, _, _) = run(listOf("Plan A. Meet later."))
+        assertEquals(listOf("Plan A.", "Meet later."), c3)                // a lone letter without a number still ends
+    }
+
     @Test fun commaCutsOnlyAfterFiveWords() {
         val (clauses, _, _) = run(listOf("Kal Bangalore mein, ", "baarish ki sambhavna kaafi zyada hai, ", "chhata le jaana."))
         assertEquals(listOf("Kal Bangalore mein, baarish ki sambhavna kaafi zyada hai,", "chhata le jaana."), clauses)

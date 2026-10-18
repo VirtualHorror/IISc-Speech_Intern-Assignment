@@ -70,6 +70,8 @@ sealed class FeedItem {
         val source: String,
         val benchmark: BenchmarkPrompt? = null,
         val wer: Double? = null,
+        /** Set when the text is not a recognition result (e.g. the chip's prompt after STT failed). */
+        val note: String? = null,
     ) : FeedItem()
 
     data class Assistant(

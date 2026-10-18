@@ -164,7 +164,10 @@ object HinglishCodec {
         put("minute", "मिनट"); put("hour", "आवर"); put("hours", "आवर्स"); put("percent", "परसेंट")
         put("point", "पॉइंट"); put("zero", "ज़ीरो"); put("one", "वन"); put("two", "टू"); put("three", "थ्री")
         put("four", "फ़ोर"); put("five", "फ़ाइव"); put("six", "सिक्स"); put("seven", "सेवन")
-        put("eight", "एट"); put("nine", "नाइन"); put("ten", "टेन"); put("eleven", "इलेवन")
+        // "eight" as एट collided with "at" (एट): the voice said "twenty at" (Whisper heard 28.3
+        // as "20.3" 0/8). एईट restores the diphthong (heard as 28 in 10/12 seeded samples).
+        put("eight", "एईट"); put("eighty", "एटी"); put("eighteen", "एटीन")
+        put("nine", "नाइन"); put("ten", "टेन"); put("eleven", "इलेवन")
         put("twelve", "ट्वेल्व"); put("twenty", "ट्वेंटी"); put("thirty", "थर्टी"); put("forty", "फ़ोर्टी")
         put("fifty", "फ़िफ़्टी"); put("hundred", "हंड्रेड"); put("thousand", "थाउज़ंड")
         put("int", "इंट"); put("iisc", "आई आई एस सी")
@@ -484,7 +487,9 @@ object HinglishCodec {
             })
         }
         val merged = mergeSplitWords(words)
-        val out = if (languageHint != "en" || looksHinglish(merged)) correctHinglish(merged) else correctEnglish(merged)
+        val hinglish = languageHint != "en" || looksHinglish(merged)
+        val out = if (hinglish) correctHinglish(merged) else correctEnglish(merged)
+        fixInvalidClockTimes(out, hinglish)
         if (shouting && out.isNotEmpty()) out[0] = out[0].replaceFirstChar { it.uppercaseChar() }
         return join(out)
     }
@@ -632,6 +637,53 @@ object HinglishCodec {
     fun displayTranscript(raw: String, language: String): String =
         cleanAsrText(normalizeSttTranscript(raw, language))
 
+    private val STRETCHED = Regex("""(\p{L})\1{3,}""", RegexOption.IGNORE_CASE)
+    private val DIGIT_RUN = Regex("""\d+""")
+    private val LETTER_RUN = Regex("""\p{L}+""")
+
+    /**
+     * True for Whisper-tiny's typical non-speech output rather than a transcript: a counting run
+     * ("1,2,3,4,5,5,5,5"), nothing but stretched sounds ("Arrrrr", "Hmmmm"), or, when a prompt
+     * chip told the user what to say ([expectingPrompt]), fewer than 4 letters.
+     */
+    fun isLikelyHallucination(text: String, expectingPrompt: Boolean = false): Boolean {
+        val t = text.trim()
+        if (t.isEmpty()) return true
+        val letters = t.count { it.isLetter() }
+        val numbers = DIGIT_RUN.findAll(t).count()
+        if (numbers >= 4 && letters <= 2) return true
+        val words = LETTER_RUN.findAll(t).map { it.value }.toList()
+        if (words.isNotEmpty() && numbers == 0 && words.all { STRETCHED.containsMatchIn(it) }) return true
+        return expectingPrompt && letters < 4
+    }
+
+    private val CLOCK = Regex("""^(\d{1,2}):(\d{2})$""")
+    private val CLOCK_CONTEXT = setOf(
+        "alarm", "alarms", "reminder", "reminders", "baje", "bajkar", "bajke", "subah", "shaam", "raat",
+        "dopahar", "am", "pm", "a.m", "p.m", "morning", "evening", "wake", "o'clock",
+    )
+
+    /**
+     * Whisper-tiny sometimes writes a spoken hour as an impossible clock time ("saat baje" ->
+     * "6:77"). Next to a time word, minutes >= 60 are dropped: a repeated-digit minute ("77") is
+     * read as the stuttered spoken number (like the "7-7" stutter [cleanAsrText] removes),
+     * otherwise the hour is kept.
+     */
+    private fun fixInvalidClockTimes(w: MutableList<String>, hinglish: Boolean) {
+        if (w.none { it.lowercase().trimEnd('.') in CLOCK_CONTEXT }) return
+        for (i in w.indices) {
+            val m = CLOCK.matchEntire(w[i]) ?: continue
+            val mm = m.groupValues[2]
+            if (mm.toInt() < 60) continue
+            val hour = if (mm[0] == mm[1] && mm[0] != '0') mm[0].digitToInt() else m.groupValues[1].toInt()
+            w[i] = when {
+                !hinglish -> "$hour:00"
+                w.getOrNull(i + 1)?.lowercase() in BAJE_FORMS -> "$hour"
+                else -> "$hour baje"
+            }
+        }
+    }
+
     private val RE_NUM_STUTTER = Regex("""\b(\d{1,2})(?:\s*-\s*\1\b)+""")
     private val RE_WORD_STUTTER = Regex("""\b(\p{L}+)(?:\s+\1\b)+""", RegexOption.IGNORE_CASE)
 
@@ -683,6 +735,8 @@ object HinglishCodec {
     private val RE_TIME = Regex("""\b(\d{1,2}):(\d{2})\s*([AaPp])\.?\s*[Mm]\b\.?|\b(\d{1,2}):(\d{2})\b""")
     private val RE_AMPM = Regex("""\b(\d{1,2})\s*([AaPp])\.?\s*[Mm]\b\.?""")
     private val RE_PERCENT = Regex("""(\d+(?:\.\d+)?)\s*%""")
+    /** "P. M." / "p.m." -> "PM" first, so no "." can split P from M into two sentences. */
+    private val RE_SPACED_AMPM = Regex("""\b([AaPp])\s*\.\s*([Mm])\b\.?""")
     private val RE_DECIMAL = Regex("""\b(\d+)\.(\d+)\b""")
     private val RE_ORDINAL = Regex("""\b(\d+)(st|nd|rd|th)\b""")
     private val RE_NUM = Regex("""\d+""")
@@ -718,6 +772,7 @@ object HinglishCodec {
         var s = normalizeDigits(displayText)
         s = s.replace(Regex("""\[ACTION:[^\]]*]"""), " ")
             .replace(Regex("[–—]"), ", ").replace('“', ' ').replace('”', ' ').replace('"', ' ')
+        s = RE_SPACED_AMPM.replace(s) { m -> m.groupValues[1].uppercase() + "M" }
 
         s = RE_TEMP.replace(s) { m ->
             val num = m.groupValues[1].ifEmpty { m.groupValues[3] }
