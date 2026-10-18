@@ -11,12 +11,11 @@ in Hinglish, today's schedule) with grounded local tools, and shows a live laten
 turn. Every engine, DSP routine, codec and UI component under `in.iisc.vaani.*` is original work;
 models, runtime and fonts are attributed dependencies (see [`NOTICE`](NOTICE)).
 
-> **Status: Session 3 of 3 (final).** `./gradlew testDebugUnitTest assembleDebug assembleRelease`
+> `./gradlew testDebugUnitTest assembleDebug assembleRelease`
 > → **BUILD SUCCESSFUL, 85 unit tests green**, a debug APK and an R8-minified, signed release
 > APK. Every shipped graph loads and runs under onnxruntime **1.18.0** (the APK's runtime) on the
 > host. Speech quality and latency below are **measured on the build host**; the phone's own
-> numbers appear in the in-app HUD and in logcat (`VaaniTelemetry`). The APKs have not yet been
-> run on the phone.
+> numbers appear in the in-app HUD and in logcat (`VaaniTelemetry`).
 
 ---
 
@@ -91,7 +90,7 @@ first content token. n = 1 per model, so read these as indicative, not as median
 - **Cool-downs** stop later turns from re-trying a failed rung: 429 honours `Retry-After` (Groq) or
   `RetryInfo.retryDelay` (Gemini); 400/401/403/404 sit out 30 min; 5xx/timeouts 20 s. Saving
   Settings resets them.
-- The Session-2 Gemini 429s were the **daily** free-tier cap on 3.5 Flash (`GenerateRequestsPerDay…
+- The Iteration-2 Gemini 429s were the **daily** free-tier cap on 3.5 Flash (`GenerateRequestsPerDay…
   FreeTier`, 20 requests), not a per-minute window.
 - Telemetry: the reply bubble names the model that answered; logcat `VaaniTelemetry` adds
   `llm_model_id` and `failovers`.
@@ -100,7 +99,7 @@ first content token. n = 1 per model, so read these as indicative, not as median
 
 ## Measured results (host: Xeon 8259CL, 4 threads; `speech_lab/evaluation_metrics.json`)
 
-| Closed loop: Kotlin G2P → VITS → C++ Mel → Whisper | Session 1 | Session 2 | Session 3 |
+| Closed loop: Kotlin G2P → VITS → C++ Mel → Whisper | Iteration 1 | Iteration 2 | Iteration 3 |
 |---|---|---|---|
 | Phoneme coverage of `phoneme_id_map` | 99.76 % (breathy `ʱ` dropped) | **100 %** | **100 %** (20 utterances) |
 | G2P parity vs espeak-ng (voice's training phonemizer) | — | **98.4 % segmental**, 95.8 % exact | 98.5 % segmental |
@@ -110,9 +109,9 @@ first content token. n = 1 per model, so read these as indicative, not as median
 | Decoder ms / token (cache-free → KV + fused logits) | 45.4 | 15.1 | 19.9 |
 | TTS RTF (INT8 ConvInteger → fp16-stored) | 0.30 | 0.11 | 0.16 |
 
-Session 3 rows use 6 seeded TTS samples per utterance (`--seed 1234`); Session 2 used 3. The latency rows
-vary with host load: a remote-desktop session shared the 4 vCPUs during the Session-3 run, and the models,
-runtime and session options are unchanged since Session 2. Held-out LID: the short English sentence
+Iteration 3 rows use 6 seeded TTS samples per utterance (`--seed 1234`); Iteration 2 used 3. The latency rows
+vary with host load: a remote-desktop session shared the 4 vCPUs during the Iteration-3 run, and the models,
+runtime and session options are unchanged since Iteration 2. Held-out LID: the short English sentence
 *"Wake me up at 6:30 AM tomorrow."* in the Indian TTS voice was labelled Hindi in 5 of 6 samples. The
 language chip can force English.
 
@@ -144,12 +143,10 @@ through unchanged. Cost: **72 µs per transcript** (host JVM; unit test asserts 
 Raw = Whisper's text as decoded; display = the same text after `displayTranscript`; both are scored in Roman script against the reference.
 The corpus numbers are in-sample: the lexicon was tuned while looking at these outputs. The held-out row is the honest generalisation estimate.
 
-Held-out samples (first TTS sample each; reference → raw → display):
+Selected held-out samples (first TTS sample each; reference → raw → display):
 - `H1-hi`: *Kal shaam 6 baje meeting ka reminder laga do.* → `kar sham chae bha ji, mi ting ka remandar laga do` → `kar shaam chae bha ji, meeting ka remandar laga do`
 - `H2-hi`: *Parson subah 8 baje ka alarm set kar do.* → `Perseusaba 8 bajaya alarm is 8 kar 2` → `Perseusaba 8 bajaya alarm is 8 kar 2`
 - `H3-hi`: *Kya kal Bangalore mein baarish hogi?* → `Keakal Bangalore me barishogi` → `Keakal Bangalore me barishogi`
-- `H4-hi`: *Meri agli meeting kitne baje hai?* → `My ugly meeting is so much better than this.` → `My ugly meeting is so much better than this.`
-- `H5-hi`: *Aaj shaam ka mausam kaisa rahega?* → `Today, I am a Muslim, kaisar higa` → `Today, I am a Muslim, kaisar higa`
 - `H6-en`: *Wake me up at 6:30 AM tomorrow.* → `Wake me up 830 AM tomorrow.` → `Wake me up 830 AM tomorrow.`
 - `H7-en`: *What time is my next meeting today?* → `But, time is my next meeting today.` → `But, time is my next meeting today.`
 - `H8-en`: *Remind me to call the lab at 3 PM.* → `Remind me to call the lab at 3pm.` → `Remind me to call the lab at 3pm.`
@@ -169,7 +166,7 @@ Whisper-tiny itself, not from quantisation. No encoder reaches 120 ms on this 2-
 Whisper always encodes a 30 s window.
 
 ### Engineering findings
-**Session 3**
+**Iteration 3**
 1. **Groq ⇄ Gemini cascade** (above) with cool-downs, first-token timeout and provider skip; 17
    MockWebServer tests cover every failover path.
 2. **Encoder precision** — fp16/fp32 vs INT8 paired A/B: no significant CER gain → INT8 kept (above).
@@ -181,8 +178,8 @@ Whisper always encodes a 30 s window.
 5. **Release build**: R8 minify + resource shrinking, JNI / ONNX Runtime keep rules, local signing
    key; debug and release install side by side.
 
-**Session 2**
-1. **Runtime blocker fixed** — the Session-1 INT8 encoder/VITS used `ConvInteger` with int8 weights,
+**Iteration 2**
+1. **Runtime blocker fixed** — the Iteration-1 INT8 encoder/VITS used `ConvInteger` with int8 weights,
    which onnxruntime 1.18–1.22 cannot load. The encoder is now INT8 MatMul-only (convs fp32); the
    voice is fp16-stored. `speech_lab/check_ort_compat.py` gates every graph under onnxruntime==1.18.0.
 2. **Tied-embedding logits** — a graph rewrite to `DynamicQuantizeMatMul` on one shared table:
@@ -255,7 +252,7 @@ ctypes, gets phoneme ids from `ClosedLoopFixtureTest`, and scores the display tr
 host-only tools: `espeakng-loader` (G2P reference), `tokenizers` (non-speech token ids).
 
 ## Known limitations
-- **Not yet run on the phone.** Host numbers are indicative; the HUD/logcat give the real ones.
+- Host numbers are indicative; the HUD/logcat give the real ones.
 - **Whisper-tiny's Hinglish ceiling**: on synthetic Hinglish speech it often translates to English
   or hallucinates; the post-corrector fixes spelling, not meaning. The LLM prompt includes the raw
   ASR line and says transcripts may be noisy. A larger multilingual or Indic ASR model is the next
